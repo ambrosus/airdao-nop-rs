@@ -1,0 +1,26 @@
+[package]
+name = "airdao-nop-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Async
+tokio = { version = "1", features = ["rt-multi-thread", "time", "macros"] }
+futures-util = "0.3"
+async-trait = "0.1"
+
+# UI
+cliclack = "0.3"
+console = "0.15"
+
+# Logging
+log = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [ "env-filter", "registry" ] }
+
+# Misc
+anyhow = "1.0"
+backtrace = "0.3"
+regex = "1.10"
+strum_macros = "0.26.4"
+thiserror = "1.0.64"
