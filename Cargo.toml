@@ -9,6 +9,20 @@ tokio = { version = "1", features = ["rt-multi-thread", "time", "macros"] }
 futures-util = "0.3"
 async-trait = "0.1"
 
+# Ethereum
+ethers = { version = "2.0" }
+ethabi = "18.0.0"
+ethereum-types = "0.15"
+
+# Crypto
+k256 = { version = "0.13" }
+ecdsa = { version = "0.16" }
+sha3 = "0.10"
+
+# SerDe
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
 # UI
 cliclack = "0.3"
 console = "0.15"
@@ -21,6 +35,8 @@ tracing-subscriber = { version = "0.3", features = [ "env-filter", "registry" ] 
 # Misc
 anyhow = "1.0"
 backtrace = "0.3"
-regex = "1.10"
+regex = "1.11"
 strum_macros = "0.26.4"
-thiserror = "1.0.64"
+thiserror = "1.0"
+hex = "0.4"
+config = { version = "0.13", default-features = false, features = ["json"] }

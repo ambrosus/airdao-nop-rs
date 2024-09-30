@@ -1,6 +1,7 @@
 pub mod error;
 pub mod messages;
 pub mod phases;
+pub mod state;
 pub mod utils;
 
 use console::style;
@@ -19,6 +20,8 @@ async fn main() -> anyhow::Result<()> {
     print_intro()?;
 
     DockerAvailablePhase::run().await?;
+
+    let state = state::State::read()?;
 
     Ok(())
 }
