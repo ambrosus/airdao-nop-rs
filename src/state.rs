@@ -4,7 +4,10 @@ use ethers::core::k256::ecdsa::SigningKey;
 use serde::Deserialize;
 use std::net::IpAddr;
 
-use crate::utils::{self, config::JsonConfig};
+use crate::{
+    config::Network,
+    utils::{self, config::JsonConfig},
+};
 
 const DEFAULT_STATE_PATH: &str = "state.json";
 
@@ -16,16 +19,6 @@ pub struct State {
     pub private_key: Option<SigningKey>,
     pub address: Option<Address>,
     pub ip: Option<IpAddr>,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct Network {
-    pub domain: String,
-    pub rpc: String,
-    pub chainspec: String,
-    pub explorer_url: String,
-    pub name: String,
 }
 
 impl JsonConfig for State {

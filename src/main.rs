@@ -1,3 +1,4 @@
+pub mod config;
 pub mod error;
 pub mod messages;
 pub mod phases;
@@ -5,23 +6,29 @@ pub mod state;
 pub mod utils;
 
 use console::style;
-use phases::check_docker::DockerAvailablePhase;
-use utils::logger;
+use phases::{check_docker::DockerAvailablePhase, select_network::SelectNetworkPhase};
+use utils::{config::JsonConfig, logger};
 
 use crate::phases::Phase;
+use config::Config;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_heavy_panic();
     logger::init();
 
+    let config = Config::load_json("./", "./config/custom.json")?;
+
     cliclack::clear_screen()?;
 
     print_intro()?;
 
-    DockerAvailablePhase::run().await?;
+    DockerAvailablePhase {}.run().await?;
 
     let state = state::State::read()?;
+
+    let mut select_network = SelectNetworkPhase::new(state.network.as_ref(), &config.networks);
+    select_network.run().await?;
 
     Ok(())
 }

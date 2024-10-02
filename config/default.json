@@ -1,0 +1,26 @@
+{
+  "networks": {
+    "main": {
+      "name": "main",
+      "domain": "ambrosus.io",
+      "rpc": "https://network.ambrosus.io",
+      "chainspec": "https://chainspec.ambrosus.io",
+      "explorerUrl": "https://airdao.io"
+    },
+    "test": {
+      "name": "test",
+      "domain": "ambrosus-test.io",
+      "rpc": "https://network.ambrosus-test.io",
+      "chainspec": "https://chainspec.ambrosus-test.io",
+      "explorerUrl": "https://testnet.airdao.io"
+    },
+    "dev": {
+      "name": "dev",
+      "domain": "ambrosus-dev.io",
+      "rpc": "https://network.ambrosus-dev.io",
+      "chainspec": "https://chainspec.ambrosus-dev.io",
+      "explorerUrl": "https://devnet.airdao.io"
+    }
+  }
+}
+  
