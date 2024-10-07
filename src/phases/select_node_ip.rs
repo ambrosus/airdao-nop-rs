@@ -20,20 +20,18 @@ impl SelectNodeIP {
 impl Phase for SelectNodeIP {
     fn run<'a>(&'a mut self) -> BoxFuture<'a, Result<(), error::AppError>> {
         async {
-            if self.node_ip.is_some() {
-                return Ok(());
-            }
+            if self.node_ip.is_none() {
+                let my_ip = fetch_my_ip().await?;
 
-            let my_ip = fetch_my_ip().await?;
-
-            if cliclack::confirm(MessageType::NodeIpConfirmRequest { ip: my_ip }).interact()? {
-                self.node_ip = Some(my_ip);
-            } else {
-                let ip_text: String = cliclack::input(MessageType::NodeIpInputManually)
-                    .validate_interactively(|input: &String| validate_ip_input(input, true))
-                    .validate(|input: &String| validate_ip_input(input, false))
-                    .interact()?;
-                self.node_ip = Some(IpAddr::from_str(&ip_text)?);
+                if cliclack::confirm(MessageType::NodeIpConfirmRequest { ip: my_ip }).interact()? {
+                    self.node_ip = Some(my_ip);
+                } else {
+                    let ip_text: String = cliclack::input(MessageType::NodeIpInputManually)
+                        .validate_interactively(|input: &String| validate_ip_input(input, true))
+                        .validate(|input: &String| validate_ip_input(input, false))
+                        .interact()?;
+                    self.node_ip = Some(IpAddr::from_str(&ip_text)?);
+                }
             }
 
             if let Some(ip) = &self.node_ip {

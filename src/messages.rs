@@ -5,7 +5,10 @@ use strum_macros::Display;
 #[derive(Display)]
 pub enum MessageType<'a> {
     #[strum(serialize = "Which network do you want to be onboarded to?")]
-    Network,
+    NetworkRequest,
+
+    #[strum(serialize = "Network {network:?}")]
+    NetworkSelected { network: &'a str },
 
     #[strum(serialize = "No private key setup yet. What do you want to do?")]
     NoPrivateKey,

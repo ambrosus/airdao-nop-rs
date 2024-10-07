@@ -38,41 +38,39 @@ enum PrivateKeyInputKind {
 impl Phase for SelectPrivateKeyPhase {
     fn run<'a>(&'a mut self) -> BoxFuture<'a, Result<(), error::AppError>> {
         async {
-            if self.private_key.is_some() {
-                return Ok(());
+            if self.private_key.is_none() {
+                match cliclack::select(MessageType::NoPrivateKey)
+                    .items(&[
+                        (
+                            PrivateKeyInputKind::Manual,
+                            MessageType::PrivateKeyInputExistingSelection,
+                            "",
+                        ),
+                        (
+                            PrivateKeyInputKind::Generate,
+                            MessageType::PrivateKeyGenerateNewSelection,
+                            "",
+                        ),
+                    ])
+                    .initial_value(PrivateKeyInputKind::Manual)
+                    .interact()?
+                {
+                    PrivateKeyInputKind::Manual => {
+                        let key: String = cliclack::input(MessageType::PrivateKeyInputManually)
+                            .validate_interactively(|input: &String| {
+                                validate_private_key_input(input, true)
+                            })
+                            .validate(|input: &String| validate_private_key_input(input, false))
+                            .interact()?;
+                        self.private_key = Some(SigningKey::from_slice(&hex::decode(
+                            utils::skip_hex_prefix(&key),
+                        )?)?);
+                    }
+                    PrivateKeyInputKind::Generate => {
+                        self.private_key = Some(SigningKey::random(&mut OsRng));
+                    }
+                };
             }
-
-            match cliclack::select(MessageType::NoPrivateKey)
-                .items(&[
-                    (
-                        PrivateKeyInputKind::Manual,
-                        MessageType::PrivateKeyInputExistingSelection,
-                        "",
-                    ),
-                    (
-                        PrivateKeyInputKind::Generate,
-                        MessageType::PrivateKeyGenerateNewSelection,
-                        "",
-                    ),
-                ])
-                .initial_value(PrivateKeyInputKind::Manual)
-                .interact()?
-            {
-                PrivateKeyInputKind::Manual => {
-                    let key: String = cliclack::input(MessageType::PrivateKeyInputManually)
-                        .validate_interactively(|input: &String| {
-                            validate_private_key_input(input, true)
-                        })
-                        .validate(|input: &String| validate_private_key_input(input, false))
-                        .interact()?;
-                    self.private_key = Some(SigningKey::from_slice(&hex::decode(
-                        utils::skip_hex_prefix(&key),
-                    )?)?);
-                }
-                PrivateKeyInputKind::Generate => {
-                    self.private_key = Some(SigningKey::random(&mut OsRng));
-                }
-            };
 
             if let Some(private_key) = &self.private_key {
                 cliclack::note(

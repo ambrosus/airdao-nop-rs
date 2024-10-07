@@ -44,7 +44,7 @@ impl Phase for SelectNetworkPhase<'_> {
                 let selected = if self.available_networks.len() == 1 {
                     initial_network
                 } else {
-                    cliclack::select(MessageType::Network)
+                    cliclack::select(MessageType::NetworkRequest)
                         .items(
                             &self
                                 .available_networks
@@ -59,7 +59,13 @@ impl Phase for SelectNetworkPhase<'_> {
                 self.network = self.available_networks.get(selected);
             }
 
-            if self.network.is_some() {
+            if let Some(network) = self.network {
+                cliclack::note(
+                    "Network check",
+                    MessageType::NetworkSelected {
+                        network: &network.name,
+                    },
+                )?;
                 Ok(())
             } else {
                 Err(anyhow!("No network selected").into())
