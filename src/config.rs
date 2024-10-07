@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::utils::config::JsonConfig;
+use crate::utils::config::{ConfigPath, JsonConfig};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -21,5 +21,8 @@ pub struct Network {
 
 impl JsonConfig for Config {
     type Type = Config;
-    const DEFAULT_PATH: Option<&str> = Some("./config/default.json");
+    const DEFAULT_PATH: Option<&ConfigPath<'_>> = Some(&ConfigPath::Relative {
+        root: "./",
+        path: "./config/default.json",
+    });
 }

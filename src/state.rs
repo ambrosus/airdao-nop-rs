@@ -11,10 +11,16 @@ use std::{
 
 use crate::{
     config::Network,
-    utils::{self, config::JsonConfig},
+    utils::{
+        self,
+        config::{ConfigPath, JsonConfig},
+    },
 };
 
-const DEFAULT_STATE_PATH: &str = "state.json";
+const DEFAULT_STATE_PATH: ConfigPath<'_> = ConfigPath::Relative {
+    root: "./",
+    path: "./state.json",
+};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
@@ -22,23 +28,26 @@ pub struct State {
     pub network: Option<Network>,
     #[serde(with = "utils::secp256k1_signing_key_opt_str")]
     pub private_key: Option<SigningKey>,
+    #[serde(skip_deserializing)]
     pub address: Option<Address>,
     pub ip: Option<IpAddr>,
 }
 
 impl JsonConfig for State {
     type Type = Self;
-    const DEFAULT_PATH: Option<&str> = None;
+    const DEFAULT_PATH: Option<&ConfigPath<'_>> = None;
 }
 
 impl State {
-    fn path() -> String {
-        std::env::var("STORE_PATH").unwrap_or_else(|_| DEFAULT_STATE_PATH.to_string())
+    pub fn path() -> PathBuf {
+        match std::env::var("STORE_PATH").as_deref() {
+            Ok(path) => PathBuf::from(&ConfigPath::Absolute { path }),
+            Err(_) => PathBuf::from(&DEFAULT_STATE_PATH),
+        }
     }
 
     pub fn read() -> anyhow::Result<Self> {
-        let path = Self::path();
-        let res = Self::load_json("./", &path);
+        let res = Self::load_json(Self::path());
 
         if matches!(&res, Err(ConfigError::Foreign(e))
             if e.downcast_ref::<std::io::Error>().map(|e| e.kind())
@@ -47,12 +56,18 @@ impl State {
             return Ok(Self::default());
         }
 
-        res.map_err(anyhow::Error::from)
+        res.map(|mut state| {
+            state.address = state
+                .private_key
+                .as_ref()
+                .map(utils::secp256k1_signing_key_to_eth_address);
+            state
+        })
+        .map_err(anyhow::Error::from)
     }
 
     pub fn write(&self) -> anyhow::Result<()> {
-        let path = PathBuf::from("./").join(Self::path());
-        let file = File::create(path)?;
+        let file = File::create(Self::path())?;
         let mut writer = BufWriter::new(file);
 
         serde_json::to_writer_pretty(&mut writer, &self)?;

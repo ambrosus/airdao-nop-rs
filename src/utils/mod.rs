@@ -3,7 +3,7 @@ pub mod exec;
 pub mod logger;
 
 use backtrace::Backtrace;
-use ethereum_types::H160;
+use ethereum_types::{Address, H160};
 use log::error;
 use serde::{de, Deserialize};
 use sha3::{Digest, Keccak256};
@@ -112,4 +112,8 @@ pub fn skip_hex_prefix(input: &str) -> &str {
         Some(input) => input,
         None => input,
     }
+}
+
+pub fn secp256k1_signing_key_to_eth_address(key: &k256::ecdsa::SigningKey) -> Address {
+    get_eth_address(key.verifying_key().to_encoded_point(false).as_bytes())
 }

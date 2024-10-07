@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use ethereum_types::Address;
 use futures_util::{future::BoxFuture, FutureExt};
 use k256::ecdsa::SigningKey;
 use rand::rngs::OsRng;
@@ -15,17 +14,6 @@ pub struct SelectPrivateKeyPhase {
 impl SelectPrivateKeyPhase {
     pub fn new(private_key: Option<SigningKey>) -> Self {
         Self { private_key }
-    }
-
-    pub fn address(&self) -> Option<Address> {
-        self.private_key.as_ref().map(|private_key| {
-            utils::get_eth_address(
-                private_key
-                    .verifying_key()
-                    .to_encoded_point(false)
-                    .as_bytes(),
-            )
-        })
     }
 }
 
@@ -76,12 +64,7 @@ impl Phase for SelectPrivateKeyPhase {
                 cliclack::note(
                     "Private key check",
                     MessageType::PrivateKeyVerified {
-                        address: utils::get_eth_address(
-                            private_key
-                                .verifying_key()
-                                .to_encoded_point(false)
-                                .as_bytes(),
-                        ),
+                        address: utils::secp256k1_signing_key_to_eth_address(private_key),
                     },
                 )?;
                 Ok(())

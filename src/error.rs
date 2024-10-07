@@ -11,6 +11,9 @@ pub enum AppError {
     /// IP Address parse error
     #[error("Invalid IP address: {0:#}")]
     IpAddress(#[from] std::net::AddrParseError),
+    /// Reqwest crate error
+    #[error("Http request failed: {0}")]
+    ReqwestError(#[from] reqwest::Error),
     /// Generic
     #[error("{0:#}")]
     Anyhow(#[from] anyhow::Error),

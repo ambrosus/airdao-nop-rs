@@ -2,25 +2,33 @@ pub mod config;
 pub mod error;
 pub mod messages;
 pub mod phases;
+pub mod setup;
 pub mod state;
 pub mod utils;
 
 use console::style;
+use setup::Setup;
+use std::path::PathBuf;
+
+use config::Config;
 use phases::{
     check_docker::DockerAvailablePhase, select_network::SelectNetworkPhase,
-    select_node_ip::SelectNodeIP, select_private_key::SelectPrivateKeyPhase,
+    select_node_ip::SelectNodeIP, select_private_key::SelectPrivateKeyPhase, Phase,
 };
-use utils::{config::JsonConfig, logger};
-
-use crate::phases::Phase;
-use config::Config;
+use utils::{
+    config::{ConfigPath, JsonConfig},
+    logger,
+};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_heavy_panic();
     logger::init();
 
-    let config = Config::load_json("./", "./config/custom.json")?;
+    let config = Config::load_json(PathBuf::from(&ConfigPath::Relative {
+        root: "./",
+        path: "./config/custom.json",
+    }))?;
 
     cliclack::clear_screen()?;
 
@@ -36,7 +44,10 @@ async fn main() -> anyhow::Result<()> {
 
     let mut select_private_key = SelectPrivateKeyPhase::new(state.private_key);
     select_private_key.run().await?;
-    state.address = select_private_key.address();
+    state.address = select_private_key
+        .private_key
+        .as_ref()
+        .map(utils::secp256k1_signing_key_to_eth_address);
     state.private_key = select_private_key.private_key;
 
     let mut select_node_ip = SelectNodeIP::new(state.ip);
@@ -44,6 +55,9 @@ async fn main() -> anyhow::Result<()> {
     state.ip = select_node_ip.node_ip;
 
     state.write()?;
+
+    let setup = Setup::new(state);
+    setup.run().await?;
 
     Ok(())
 }
