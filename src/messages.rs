@@ -1,7 +1,5 @@
-use std::net::SocketAddr;
-
 use ethereum_types::Address;
-use k256::ecdsa::SigningKey;
+use std::net::SocketAddr;
 use strum_macros::Display;
 
 #[derive(Display)]
@@ -20,6 +18,12 @@ pub enum MessageType {
 
     #[strum(serialize = "Please provide your private key (in hex form):")]
     PrivateKeyInputManually,
+
+    #[strum(serialize = "Private key invalid length (64 hex characters max)")]
+    PrivateKeyInvalidLength,
+
+    #[strum(serialize = "Private key should be in hex form")]
+    PrivateKeyInvalidFormat,
 
     #[strum(serialize = "✅ Private key verified. Your address is ${address:?}")]
     PrivateKeyVerified { address: Address },

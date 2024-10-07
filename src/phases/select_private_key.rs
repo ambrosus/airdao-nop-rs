@@ -49,25 +49,13 @@ impl Phase for SelectPrivateKeyPhase {
                 PrivateKeyInputKind::Manual => {
                     let key: String = cliclack::input(MessageType::PrivateKeyInputManually)
                         .validate_interactively(|input: &String| {
-                            if input.len() > 64 {
-                                Err(anyhow!("Private key invalid length (64 characters max)"))
-                            } else if input.chars().any(|c| !c.is_ascii_hexdigit()) {
-                                Err(anyhow!("Private key should be in hex form"))
-                            } else {
-                                Ok(())
-                            }
+                            validate_private_key_input(input, true)
                         })
-                        .validate(|input: &String| {
-                            if input.len() != 64 {
-                                Err(anyhow!("Private key invalid length (64 characters max)"))
-                            } else if input.chars().any(|c| !c.is_ascii_hexdigit()) {
-                                Err(anyhow!("Private key should be in hex form"))
-                            } else {
-                                Ok(())
-                            }
-                        })
+                        .validate(|input: &String| validate_private_key_input(input, false))
                         .interact()?;
-                    self.private_key = Some(SigningKey::from_slice(&hex::decode(key)?)?);
+                    self.private_key = Some(SigningKey::from_slice(&hex::decode(
+                        skip_hex_prefix(&key),
+                    )?)?);
                 }
                 PrivateKeyInputKind::Generate => {
                     self.private_key = Some(SigningKey::random(&mut OsRng));
@@ -92,5 +80,63 @@ impl Phase for SelectPrivateKeyPhase {
             }
         }
         .boxed()
+    }
+}
+
+fn skip_hex_prefix(input: &str) -> &str {
+    match input.strip_prefix("0x") {
+        Some(input) => input,
+        None => input,
+    }
+}
+
+fn validate_private_key_input(input: &str, interactive: bool) -> anyhow::Result<()> {
+    let input = skip_hex_prefix(input);
+
+    let valid_length = if interactive {
+        input.len() <= 64
+    } else {
+        input.len() == 64
+    };
+    if !valid_length {
+        anyhow::bail!("{}", MessageType::PrivateKeyInvalidLength);
+    }
+
+    let invalid_format = input.chars().any(|c| !c.is_ascii_hexdigit());
+    if invalid_format {
+        anyhow::bail!("{}", MessageType::PrivateKeyInvalidFormat);
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_matches::assert_matches;
+
+    #[test]
+    fn test_validate_private_key_input() {
+        assert!(validate_private_key_input("0x", true).is_ok());
+        assert!(validate_private_key_input("0xab", true).is_ok());
+        assert!(validate_private_key_input(
+            "0xabababababababababababababababababababababababababababababababab",
+            true
+        )
+        .is_ok());
+        assert!(validate_private_key_input(
+            "abababababababababababababababababababababababababababababababab",
+            true
+        )
+        .is_ok());
+        assert_matches!(
+            validate_private_key_input("ababababababababababababababababababababababababababababababababc", true),
+            Err(e) if e.to_string().starts_with(&MessageType::PrivateKeyInvalidLength.to_string()));
+        assert_matches!(
+            validate_private_key_input("abababababababababababababababababababababababababababababababc", false),
+            Err(e) if e.to_string().starts_with(&MessageType::PrivateKeyInvalidLength.to_string()));
+        assert_matches!(
+            validate_private_key_input("abababababababababababababababababababababababababababababababax", false),
+            Err(e) if e.to_string().starts_with(&MessageType::PrivateKeyInvalidFormat.to_string()));
     }
 }
