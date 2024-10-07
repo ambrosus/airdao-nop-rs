@@ -1,13 +1,10 @@
-use std::marker::PhantomData;
-
 use anyhow::anyhow;
-use cliclack::Validate;
 use futures_util::{future::BoxFuture, FutureExt};
 use k256::ecdsa::SigningKey;
 use rand::rngs::OsRng;
 
 use super::Phase;
-use crate::{error, messages};
+use crate::{error, messages, utils};
 use messages::MessageType;
 
 pub struct SelectPrivateKeyPhase {
@@ -77,7 +74,18 @@ impl Phase for SelectPrivateKeyPhase {
                 }
             };
 
-            if self.private_key.is_some() {
+            if let Some(private_key) = &self.private_key {
+                cliclack::note(
+                    "Private key check",
+                    MessageType::PrivateKeyVerified {
+                        address: utils::get_eth_address(
+                            private_key
+                                .verifying_key()
+                                .to_encoded_point(false)
+                                .as_bytes(),
+                        ),
+                    },
+                )?;
                 Ok(())
             } else {
                 Err(anyhow!("No private key specified").into())
