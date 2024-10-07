@@ -56,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
 
     state.write()?;
 
-    let setup = Setup::new(state);
+    let setup = Setup::new(state)?;
     setup.run().await?;
 
     Ok(())

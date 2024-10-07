@@ -14,6 +14,15 @@ pub enum AppError {
     /// Reqwest crate error
     #[error("Http request failed: {0}")]
     ReqwestError(#[from] reqwest::Error),
+    /// SerDe JSON error
+    #[error("SerDe JSON error: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
+    /// Utf-8 parser error
+    #[error("Utf-8 parse error: {0}")]
+    Utf8Error(#[from] std::str::Utf8Error),
+    /// YAML reader error
+    #[error("YAML scan error: {0}")]
+    YamlScanError(#[from] yaml_rust2::ScanError),
     /// Generic
     #[error("{0:#}")]
     Anyhow(#[from] anyhow::Error),
