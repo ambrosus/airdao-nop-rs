@@ -6,7 +6,10 @@ pub mod state;
 pub mod utils;
 
 use console::style;
-use phases::{check_docker::DockerAvailablePhase, select_network::SelectNetworkPhase};
+use phases::{
+    check_docker::DockerAvailablePhase, select_network::SelectNetworkPhase,
+    select_private_key::SelectPrivateKeyPhase,
+};
 use utils::{config::JsonConfig, logger};
 
 use crate::phases::Phase;
@@ -29,6 +32,9 @@ async fn main() -> anyhow::Result<()> {
 
     let mut select_network = SelectNetworkPhase::new(state.network.as_ref(), &config.networks);
     select_network.run().await?;
+
+    let mut select_private_key = SelectPrivateKeyPhase::new(state.private_key);
+    select_private_key.run().await?;
 
     Ok(())
 }

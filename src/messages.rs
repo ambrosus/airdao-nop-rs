@@ -10,6 +10,15 @@ pub enum MessageType {
     #[strum(serialize = "No private key setup yet. What do you want to do?")]
     NoPrivateKey,
 
+    #[strum(serialize = "Input existing key manually")]
+    PrivateKeyInputExistingSelection,
+
+    #[strum(serialize = "Generate new key automatically")]
+    PrivateKeyGenerateNewSelection,
+
+    #[strum(serialize = "Please provide your private key (in hex form):")]
+    PrivateKeyInputManually,
+
     #[strum(serialize = "Node IP defined as, {ip}")]
     NodeIpInfo { ip: SocketAddr },
 
