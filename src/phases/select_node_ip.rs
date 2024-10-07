@@ -8,7 +8,7 @@ use crate::{error, messages};
 use messages::MessageType;
 
 pub struct SelectNodeIP {
-    node_ip: Option<IpAddr>,
+    pub node_ip: Option<IpAddr>,
 }
 
 impl SelectNodeIP {

@@ -7,7 +7,7 @@ use crate::{config::Network, error, messages};
 use messages::MessageType;
 
 pub struct SelectNetworkPhase<'a> {
-    network: Option<&'a Network>,
+    pub network: Option<&'a Network>,
     available_networks: &'a HashMap<String, Network>,
 }
 

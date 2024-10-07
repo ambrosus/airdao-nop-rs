@@ -28,16 +28,22 @@ async fn main() -> anyhow::Result<()> {
 
     DockerAvailablePhase {}.run().await?;
 
-    let state = state::State::read()?;
+    let mut state = state::State::read()?;
 
     let mut select_network = SelectNetworkPhase::new(state.network.as_ref(), &config.networks);
     select_network.run().await?;
+    state.network = select_network.network.cloned();
 
     let mut select_private_key = SelectPrivateKeyPhase::new(state.private_key);
     select_private_key.run().await?;
+    state.address = select_private_key.address();
+    state.private_key = select_private_key.private_key;
 
     let mut select_node_ip = SelectNodeIP::new(state.ip);
     select_node_ip.run().await?;
+    state.ip = select_node_ip.node_ip;
+
+    state.write()?;
 
     Ok(())
 }

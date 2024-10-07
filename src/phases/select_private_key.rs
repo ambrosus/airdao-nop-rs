@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use ethereum_types::Address;
 use futures_util::{future::BoxFuture, FutureExt};
 use k256::ecdsa::SigningKey;
 use rand::rngs::OsRng;
@@ -8,12 +9,23 @@ use crate::{error, messages, utils};
 use messages::MessageType;
 
 pub struct SelectPrivateKeyPhase {
-    private_key: Option<SigningKey>,
+    pub private_key: Option<SigningKey>,
 }
 
 impl SelectPrivateKeyPhase {
     pub fn new(private_key: Option<SigningKey>) -> Self {
         Self { private_key }
+    }
+
+    pub fn address(&self) -> Option<Address> {
+        self.private_key.as_ref().map(|private_key| {
+            utils::get_eth_address(
+                private_key
+                    .verifying_key()
+                    .to_encoded_point(false)
+                    .as_bytes(),
+            )
+        })
     }
 }
 
@@ -54,7 +66,7 @@ impl Phase for SelectPrivateKeyPhase {
                         .validate(|input: &String| validate_private_key_input(input, false))
                         .interact()?;
                     self.private_key = Some(SigningKey::from_slice(&hex::decode(
-                        skip_hex_prefix(&key),
+                        utils::skip_hex_prefix(&key),
                     )?)?);
                 }
                 PrivateKeyInputKind::Generate => {
@@ -83,15 +95,8 @@ impl Phase for SelectPrivateKeyPhase {
     }
 }
 
-fn skip_hex_prefix(input: &str) -> &str {
-    match input.strip_prefix("0x") {
-        Some(input) => input,
-        None => input,
-    }
-}
-
 fn validate_private_key_input(input: &str, interactive: bool) -> anyhow::Result<()> {
-    let input = skip_hex_prefix(input);
+    let input = utils::skip_hex_prefix(input);
 
     let valid_length = if interactive {
         input.len() <= 64

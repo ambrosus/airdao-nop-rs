@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::utils::config::JsonConfig;
@@ -9,7 +9,7 @@ pub struct Config {
     pub networks: HashMap<String, Network>,
 }
 
-#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Network {
     pub domain: String,
