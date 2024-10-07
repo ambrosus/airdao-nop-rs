@@ -8,7 +8,7 @@ pub mod utils;
 use console::style;
 use phases::{
     check_docker::DockerAvailablePhase, select_network::SelectNetworkPhase,
-    select_private_key::SelectPrivateKeyPhase,
+    select_node_ip::SelectNodeIP, select_private_key::SelectPrivateKeyPhase,
 };
 use utils::{config::JsonConfig, logger};
 
@@ -35,6 +35,9 @@ async fn main() -> anyhow::Result<()> {
 
     let mut select_private_key = SelectPrivateKeyPhase::new(state.private_key);
     select_private_key.run().await?;
+
+    let mut select_node_ip = SelectNodeIP::new(state.ip);
+    select_node_ip.run().await?;
 
     Ok(())
 }

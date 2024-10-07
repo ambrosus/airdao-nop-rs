@@ -1,5 +1,6 @@
 pub mod check_docker;
 pub mod select_network;
+pub mod select_node_ip;
 pub mod select_private_key;
 
 use futures_util::future::BoxFuture;
