@@ -1,3 +1,5 @@
+use k256::ecdsa::SigningKey;
+use rand::rngs::OsRng;
 use yaml_rust2::Yaml;
 
 pub fn yaml_find_hash_node<'a>(node: &'a Yaml, path: &str) -> Option<&'a Yaml> {
@@ -23,4 +25,11 @@ pub fn yaml_find_hash_node<'a>(node: &'a Yaml, path: &str) -> Option<&'a Yaml> {
         }
         _ => None,
     }
+}
+
+pub fn generate_password() -> String {
+    format!(
+        "0x{}",
+        hex::encode(SigningKey::random(&mut OsRng).to_bytes())
+    )
 }

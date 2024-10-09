@@ -18,6 +18,7 @@ const DEFAULT_TEMPLATES_PATH: &str = "./setup_templates/";
 const CHAIN_DESCRIPTION_FILE_NAME: &str = "./chain.json";
 const DOCKER_FILE_NAME: &str = "./docker-compose.yml";
 const PARITY_CONFIG_FILE_NAME: &str = "./parity_config.toml";
+const PASSWORD_FILE_NAME: &str = "password.pwds";
 
 pub struct Setup {
     network: Network,
@@ -100,6 +101,9 @@ impl Setup {
         )
         .await?;
         parity_config_file.save().await?;
+
+        let random_password = utils::generate_password();
+        tokio::fs::write(output_dir.join(PASSWORD_FILE_NAME), &random_password).await?;
 
         todo!()
     }
