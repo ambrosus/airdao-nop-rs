@@ -14,7 +14,6 @@ use crate::{config::Network, error::AppError, messages::MessageType, state::Stat
 use docker_compose_file::DockerComposeFile;
 use parity_config_file::ParityConfigFile;
 
-const DEFAULT_OUTPUT_PATH: &str = "./output/";
 const DEFAULT_TEMPLATES_PATH: &str = "./setup_templates/";
 const CHAIN_DESCRIPTION_FILE_NAME: &str = "./chain.json";
 const DOCKER_FILE_NAME: &str = "./docker-compose.yml";
@@ -54,12 +53,6 @@ impl Setup {
         })
     }
 
-    fn output_path() -> PathBuf {
-        std::env::var("OUTPUT_DIRECTORY")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from("./").join(DEFAULT_OUTPUT_PATH.to_string()))
-    }
-
     fn templates_path() -> PathBuf {
         std::env::var("TEMPLATE_DIRECTORY")
             .map(PathBuf::from)
@@ -67,7 +60,7 @@ impl Setup {
     }
 
     pub async fn run(&self) -> Result<(), AppError> {
-        let output_dir = Self::output_path();
+        let output_dir = crate::utils::output_dir();
 
         if !tokio::fs::try_exists(&output_dir).await? {
             tokio::fs::create_dir_all(&output_dir).await?;

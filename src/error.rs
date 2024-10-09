@@ -26,6 +26,9 @@ pub enum AppError {
     /// Keystore error
     #[error("Keystore error: {0}")]
     KeystoreError(#[from] eth_keystore::KeystoreError),
+    /// Config error
+    #[error("Config error: {0}")]
+    ConfigError(#[from] config::ConfigError),
     /// Generic
     #[error("{0:#}")]
     Anyhow(#[from] anyhow::Error),

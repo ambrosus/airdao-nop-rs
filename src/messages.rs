@@ -53,6 +53,9 @@ pub enum MessageType<'a> {
     #[strum(serialize = "✅ Docker is installed")]
     DockerInstalled,
 
+    #[strum(serialize = "Starting docker containers... 🐳")]
+    DockerStart,
+
     #[strum(serialize = "🎉 Your node configuration is ready 🎉")]
     SetupCompleted,
 }

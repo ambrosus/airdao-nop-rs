@@ -1,7 +1,11 @@
+use anyhow::anyhow;
 use regex::Regex;
-use std::{process::Command, str};
+use std::{
+    process::{Command, Output},
+    str,
+};
 
-const DEFAULT_OUTPUT_DIRECTORY: &str = "./output";
+use crate::utils;
 
 pub fn is_docker_installed() -> anyhow::Result<bool> {
     let docker_version_regexp = Regex::new(r"^Docker version ([0-9.\-a-z]+), build ([0-9a-f]+)")?;
@@ -13,15 +17,19 @@ pub fn is_docker_installed() -> anyhow::Result<bool> {
 }
 
 pub fn run_docker() -> anyhow::Result<()> {
-    let output_dir =
-        std::env::var("OUTPUT_DIRECTORY").unwrap_or_else(|_| DEFAULT_OUTPUT_DIRECTORY.to_string());
+    let output_dir = utils::output_dir();
 
-    let _ = Command::new("docker-compose")
+    match Command::new("docker-compose")
+        .current_dir(output_dir)
         .arg("up")
         .arg("-d")
-        .arg("cwd")
-        .arg(output_dir)
-        .output()?;
-
-    Ok(())
+        .output()?
+    {
+        Output { status, .. } if status.success() => Ok(()),
+        Output { status, stderr, .. } => Err(anyhow!(
+            "Run `docker-compose` failure ({:?}). Error: {:?}",
+            status.code(),
+            std::str::from_utf8(&stderr)
+        )),
+    }
 }

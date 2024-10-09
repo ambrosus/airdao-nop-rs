@@ -7,6 +7,8 @@ pub mod state;
 pub mod utils;
 
 use console::style;
+use error::AppError;
+use messages::MessageType;
 use setup::Setup;
 use std::path::PathBuf;
 
@@ -21,7 +23,7 @@ use utils::{
 };
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<(), AppError> {
     utils::set_heavy_panic();
     logger::init();
 
@@ -30,12 +32,19 @@ async fn main() -> anyhow::Result<()> {
         path: "./config/custom.json",
     }))?;
 
+    if let Err(e) = run(&config).await {
+        cliclack::log::error(e).map_err(AppError::from)
+    } else {
+        Ok(())
+    }
+}
+
+async fn run(config: &Config) -> Result<(), AppError> {
     cliclack::clear_screen()?;
 
     print_intro()?;
 
     DockerAvailablePhase {}.run().await?;
-
     let mut state = state::State::read()?;
 
     let mut select_network = SelectNetworkPhase::new(state.network.as_ref(), &config.networks);
@@ -59,7 +68,9 @@ async fn main() -> anyhow::Result<()> {
     let setup = Setup::new(state)?;
     setup.run().await?;
 
-    Ok(())
+    cliclack::log::step(MessageType::DockerStart)?;
+
+    utils::exec::run_docker().map_err(AppError::from)
 }
 
 fn print_intro() -> anyhow::Result<()> {

@@ -7,7 +7,9 @@ use ethereum_types::{Address, H160};
 use log::error;
 use serde::{de, Deserialize};
 use sha3::{Digest, Keccak256};
-use std::{panic, thread};
+use std::{panic, path::PathBuf, thread};
+
+const DEFAULT_OUTPUT_DIRECTORY: &str = "./output";
 
 pub fn set_heavy_panic() {
     panic::set_hook(Box::new(|panic_info| {
@@ -116,4 +118,12 @@ pub fn skip_hex_prefix(input: &str) -> &str {
 
 pub fn secp256k1_signing_key_to_eth_address(key: &k256::ecdsa::SigningKey) -> Address {
     get_eth_address(key.verifying_key().to_encoded_point(false).as_bytes())
+}
+
+pub fn output_dir() -> PathBuf {
+    PathBuf::from(
+        std::env::var("OUTPUT_DIRECTORY")
+            .as_deref()
+            .unwrap_or_else(|_| DEFAULT_OUTPUT_DIRECTORY),
+    )
 }
