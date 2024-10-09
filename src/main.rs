@@ -68,9 +68,13 @@ async fn run(config: &Config) -> Result<(), AppError> {
     let setup = Setup::new(state)?;
     setup.run().await?;
 
-    cliclack::log::step(MessageType::DockerStart)?;
+    cliclack::log::step(MessageType::DockerStarting)?;
 
-    utils::exec::run_docker().map_err(AppError::from)
+    utils::exec::run_docker()?;
+
+    cliclack::log::step(MessageType::DockerStarted)?;
+
+    Ok(())
 }
 
 fn print_intro() -> anyhow::Result<()> {
