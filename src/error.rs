@@ -23,6 +23,9 @@ pub enum AppError {
     /// YAML reader error
     #[error("YAML scan error: {0}")]
     YamlScanError(#[from] yaml_rust2::ScanError),
+    /// Keystore error
+    #[error("Keystore error: {0}")]
+    KeystoreError(#[from] eth_keystore::KeystoreError),
     /// Generic
     #[error("{0:#}")]
     Anyhow(#[from] anyhow::Error),

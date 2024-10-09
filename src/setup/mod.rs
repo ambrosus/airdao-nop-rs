@@ -3,15 +3,16 @@ mod parity_config_file;
 pub mod utils;
 
 use anyhow::anyhow;
-use docker_compose_file::DockerComposeFile;
 use ethereum_types::Address;
 use futures::StreamExt;
 use k256::ecdsa::SigningKey;
-use parity_config_file::ParityConfigFile;
+use rand::rngs::OsRng;
 use serde::Deserialize;
 use std::{net::IpAddr, path::PathBuf};
 
-use crate::{config::Network, error::AppError, state::State};
+use crate::{config::Network, error::AppError, messages::MessageType, state::State};
+use docker_compose_file::DockerComposeFile;
+use parity_config_file::ParityConfigFile;
 
 const DEFAULT_OUTPUT_PATH: &str = "./output/";
 const DEFAULT_TEMPLATES_PATH: &str = "./setup_templates/";
@@ -19,6 +20,7 @@ const CHAIN_DESCRIPTION_FILE_NAME: &str = "./chain.json";
 const DOCKER_FILE_NAME: &str = "./docker-compose.yml";
 const PARITY_CONFIG_FILE_NAME: &str = "./parity_config.toml";
 const PASSWORD_FILE_NAME: &str = "password.pwds";
+const KEY_FILE_NAME: &str = "keyfile";
 
 pub struct Setup {
     network: Network,
@@ -105,7 +107,15 @@ impl Setup {
         let random_password = utils::generate_password();
         tokio::fs::write(output_dir.join(PASSWORD_FILE_NAME), &random_password).await?;
 
-        todo!()
+        eth_keystore::encrypt_key(
+            output_dir,
+            &mut OsRng,
+            self.private_key.to_bytes(),
+            random_password,
+            Some(KEY_FILE_NAME),
+        )?;
+
+        cliclack::note("Setup status", MessageType::SetupCompleted).map_err(AppError::from)
     }
 
     async fn download_and_save_chainspec_file(
