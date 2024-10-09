@@ -1,13 +1,15 @@
-mod docker_compose;
+mod docker_compose_file;
+mod parity_config_file;
 pub mod utils;
 
 use anyhow::anyhow;
-use docker_compose::DockerComposeFile;
+use docker_compose_file::DockerComposeFile;
 use ethereum_types::Address;
 use futures::StreamExt;
 use k256::ecdsa::SigningKey;
+use parity_config_file::ParityConfigFile;
 use serde::Deserialize;
-use std::path::PathBuf;
+use std::{net::IpAddr, path::PathBuf};
 
 use crate::{config::Network, error::AppError, state::State};
 
@@ -15,11 +17,13 @@ const DEFAULT_OUTPUT_PATH: &str = "./output/";
 const DEFAULT_TEMPLATES_PATH: &str = "./setup_templates/";
 const CHAIN_DESCRIPTION_FILE_NAME: &str = "./chain.json";
 const DOCKER_FILE_NAME: &str = "./docker-compose.yml";
+const PARITY_CONFIG_FILE_NAME: &str = "./parity_config.toml";
 
 pub struct Setup {
     network: Network,
     address: Address,
     private_key: SigningKey,
+    ip: IpAddr,
 }
 
 #[derive(Deserialize)]
@@ -33,7 +37,7 @@ impl Setup {
             network: Some(network),
             address: Some(address),
             private_key: Some(private_key),
-            ..
+            ip: Some(ip),
         } = state
         else {
             return Err(anyhow!("State is incomplete").into());
@@ -43,6 +47,7 @@ impl Setup {
             network,
             address,
             private_key,
+            ip,
         })
     }
 
@@ -72,6 +77,11 @@ impl Setup {
             .join(&chainspec.name)
             .join(DOCKER_FILE_NAME);
 
+        let parity_config_template_file_path = Self::templates_path()
+            .join("apollo")
+            .join(&chainspec.name)
+            .join(PARITY_CONFIG_FILE_NAME);
+
         let docker_compose_file = DockerComposeFile::new(
             docker_template_file_path,
             output_dir.join(DOCKER_FILE_NAME),
@@ -80,6 +90,16 @@ impl Setup {
         )
         .await?;
         docker_compose_file.save().await?;
+
+        let parity_config_file = ParityConfigFile::new(
+            parity_config_template_file_path,
+            output_dir.join(PARITY_CONFIG_FILE_NAME),
+            &self.address,
+            &self.ip,
+            &docker_compose_file.validator_version,
+        )
+        .await?;
+        parity_config_file.save().await?;
 
         todo!()
     }
