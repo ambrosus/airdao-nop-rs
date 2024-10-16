@@ -1,4 +1,5 @@
 pub mod config;
+pub mod contract;
 pub mod error;
 pub mod messages;
 pub mod phases;
@@ -14,8 +15,9 @@ use std::path::PathBuf;
 
 use config::Config;
 use phases::{
-    check_docker::DockerAvailablePhase, select_network::SelectNetworkPhase,
-    select_node_ip::SelectNodeIP, select_private_key::SelectPrivateKeyPhase, Phase,
+    check_docker::DockerAvailablePhase, check_status::CheckStatusPhase,
+    select_network::SelectNetworkPhase, select_node_ip::SelectNodeIP,
+    select_private_key::SelectPrivateKeyPhase, Phase,
 };
 use utils::{
     config::{ConfigPath, JsonConfig},
@@ -73,6 +75,14 @@ async fn run(config: &Config) -> Result<(), AppError> {
     utils::exec::run_docker()?;
 
     cliclack::log::step(MessageType::DockerStarted)?;
+
+    let mut check_status = CheckStatusPhase::new(
+        web3::Web3::new(web3::transports::Http::new(&setup.network.rpc)?),
+        &setup.network,
+        setup.address,
+    )
+    .await?;
+    check_status.run().await?;
 
     Ok(())
 }

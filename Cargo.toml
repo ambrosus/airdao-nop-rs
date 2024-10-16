@@ -11,9 +11,15 @@ futures-util = "0.3"
 async-trait = "0.1"
 
 # Ethereum
-ethers = { version = "2.0" }
+ethers = { path = "../ethers-rs/ethers" }
+#ethers = "2.0"
+ethers-contract-derive = "2.0"
 ethabi = "18.0.0"
-ethereum-types = "0.15"
+ethabi-derive = "16.0.0"
+ethereum-types = "0.14"
+jsonrpc-core = "18.0.0"
+web3 = { version = "0.19" }
+ethers-providers = "2"
 
 # Crypto
 k256 = { version = "0.13" }
@@ -47,6 +53,7 @@ hex = "0.4"
 config = { version = "0.13", default-features = false, features = ["json"] }
 rand = { version = "0.8", features = ["getrandom"] }
 yaml-rust2 = "0.9"
+chrono = "0.4"
 
 [dev-dependencies]
 assert_matches = "1.5"

@@ -1,4 +1,5 @@
 pub mod check_docker;
+pub mod check_status;
 pub mod select_network;
 pub mod select_node_ip;
 pub mod select_private_key;

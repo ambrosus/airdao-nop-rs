@@ -1,0 +1,3 @@
+[submodule "airdao-node-contracts"]
+	path = airdao-node-contracts
+	url = https://github.com/ambrosus/airdao-node-contracts.git

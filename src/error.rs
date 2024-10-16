@@ -2,7 +2,7 @@
 pub enum AppError {
     #[error("I/O error: {0}")]
     IO(#[from] std::io::Error),
-    /// Hex decode
+    /// Hex decode error
     #[error("Decode from hex error: {0:#}")]
     FromHex(#[from] hex::FromHexError),
     /// Signature error
@@ -29,6 +29,9 @@ pub enum AppError {
     /// Config error
     #[error("Config error: {0}")]
     ConfigError(#[from] config::ConfigError),
+    /// Web3 error
+    #[error("Web3 error: {0}")]
+    Web3(#[from] web3::Error),
     /// Generic
     #[error("{0:#}")]
     Anyhow(#[from] anyhow::Error),

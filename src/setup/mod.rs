@@ -22,8 +22,8 @@ const PASSWORD_FILE_NAME: &str = "password.pwds";
 const KEY_FILE_NAME: &str = "keyfile";
 
 pub struct Setup {
-    network: Network,
-    address: Address,
+    pub network: Network,
+    pub address: Address,
     private_key: SigningKey,
     ip: IpAddr,
 }

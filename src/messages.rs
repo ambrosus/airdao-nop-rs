@@ -1,5 +1,5 @@
 use ethereum_types::Address;
-use std::net::IpAddr;
+use std::{net::IpAddr, time::Duration};
 use strum_macros::Display;
 
 #[derive(Display)]
@@ -28,11 +28,11 @@ pub enum MessageType<'a> {
     #[strum(serialize = "Private key should be in hex form")]
     PrivateKeyInvalidFormat,
 
-    #[strum(serialize = "✅ Private key verified. Your address is ${address:?}")]
+    #[strum(serialize = "✅ Private key verified. Your address is {address:?}")]
     PrivateKeyVerified { address: Address },
 
     #[strum(
-        serialize = "Please provide the IP address, which you will be using for your node. \nIs ${ip} correct?"
+        serialize = "Please provide the IP address, which you will be using for your node. \nIs {ip} correct?"
     )]
     NodeIpConfirmRequest { ip: IpAddr },
 
@@ -58,7 +58,25 @@ pub enum MessageType<'a> {
 
     #[strum(serialize = "🎉 Your node is launched! 🎉")]
     DockerStarted,
-    
+
     #[strum(serialize = "🎉 Your node configuration is ready 🎉")]
     SetupCompleted,
+
+    #[strum(
+        serialize = "Your node is not registered in the network. Register here: {explorer_url}/explorer/node-setup/"
+    )]
+    NodeNotRegistered { explorer_url: &'a str },
+
+    #[strum(
+        serialize = "Node registered and onboarded to the network🎉. You can check it here: {explorer_url}/explorer/apollo/{node_addr:?}"
+    )]
+    NodeOnboarded {
+        explorer_url: &'a str,
+        node_addr: &'a Address,
+    },
+
+    #[strum(
+        serialize = "Please wait until your node is onboarded to the network, Left: {time_to_wait:?}"
+    )]
+    NodeOnboarding { time_to_wait: Duration },
 }
