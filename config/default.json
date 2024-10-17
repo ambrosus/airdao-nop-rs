@@ -1,4 +1,5 @@
 {
+  "discordWebhookUrl": "https://qsymqgy36zfeiifil647clfy7a0lcrfe.lambda-url.eu-central-1.on.aws/",
   "networks": {
     "main": {
       "name": "main",

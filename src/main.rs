@@ -15,9 +15,9 @@ use std::path::PathBuf;
 
 use config::Config;
 use phases::{
-    check_docker::DockerAvailablePhase, check_status::CheckStatusPhase,
-    select_network::SelectNetworkPhase, select_node_ip::SelectNodeIP,
-    select_private_key::SelectPrivateKeyPhase, Phase,
+    actions_menu::ActionsMenuPhase, check_docker::DockerAvailablePhase,
+    check_status::CheckStatusPhase, select_network::SelectNetworkPhase,
+    select_node_ip::SelectNodeIP, select_private_key::SelectPrivateKeyPhase, Phase,
 };
 use utils::{
     config::{ConfigPath, JsonConfig},
@@ -83,6 +83,15 @@ async fn run(config: &Config) -> Result<(), AppError> {
     )
     .await?;
     check_status.run().await?;
+
+    let mut actions_menu = ActionsMenuPhase::new(config.discord_webhook_url.clone());
+    loop {
+        if actions_menu.quit {
+            break;
+        }
+
+        actions_menu.run().await?;
+    }
 
     Ok(())
 }

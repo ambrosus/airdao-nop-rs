@@ -6,6 +6,7 @@ use crate::utils::config::{ConfigPath, JsonConfig};
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+    pub discord_webhook_url: String,
     pub networks: HashMap<String, Network>,
 }
 

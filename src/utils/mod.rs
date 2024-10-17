@@ -1,13 +1,20 @@
 pub mod config;
+pub mod debug_info;
 pub mod exec;
 pub mod logger;
 
 use backtrace::Backtrace;
 use ethereum_types::{Address, H160};
+use futures::{FutureExt, TryFutureExt};
 use log::error;
 use serde::{de, Deserialize};
 use sha3::{Digest, Keccak256};
-use std::{panic, path::PathBuf, thread};
+use std::{
+    panic,
+    path::PathBuf,
+    process::{Command, Output},
+    thread,
+};
 
 const DEFAULT_OUTPUT_DIRECTORY: &str = "./output";
 
@@ -126,4 +133,115 @@ pub fn output_dir() -> PathBuf {
             .as_deref()
             .unwrap_or_else(|_| DEFAULT_OUTPUT_DIRECTORY),
     )
+}
+
+pub fn output_into_string(output: Result<Output, std::io::Error>) -> String {
+    match output {
+        Ok(Output { status, stdout, .. }) if status.success() => {
+            match std::str::from_utf8(&stdout) {
+                Ok(text) => text.to_owned(),
+                Err(e) => format!("Format error: {e:?}. Raw: {stdout:?}"),
+            }
+        }
+        Ok(Output { status, stderr, .. }) => format!(
+            "Status: {}. Error: {}",
+            status.code().unwrap_or_default(),
+            std::str::from_utf8(&stderr).unwrap_or_default()
+        ),
+        Err(e) => {
+            format!("I/O error: {e:?}")
+        }
+    }
+}
+
+pub fn get_os_release() -> String {
+    output_into_string(Command::new("cat").arg("/etc/os-release").output())
+}
+
+pub fn get_mem_info() -> String {
+    output_into_string(Command::new("cat").arg("/proc/meminfo").output())
+}
+
+pub fn get_directory_contents(cwd: Option<PathBuf>) -> String {
+    let mut cmd = Command::new("ls");
+
+    if let Some(cwd) = cwd {
+        cmd.current_dir(cwd);
+    }
+
+    output_into_string(cmd.arg("-la").output())
+}
+
+pub fn get_disk_block_info() -> String {
+    output_into_string(Command::new("df").arg("-h").output())
+}
+
+pub fn get_disk_inodes_info() -> String {
+    output_into_string(Command::new("df").arg("-i").output())
+}
+
+pub fn get_process_tree() -> String {
+    output_into_string(Command::new("ps").arg("axjf").output())
+}
+
+pub fn get_memory_usage() -> String {
+    output_into_string(Command::new("free").arg("-m").output())
+}
+
+pub fn get_docker_compose_logs() -> String {
+    output_into_string(
+        Command::new("docker-compose")
+            .arg("logs")
+            .arg("--tail=500")
+            .output(),
+    )
+}
+
+pub async fn get_git_commits() -> (String, String) {
+    if let Ok(mut child) = tokio::process::Command::new("git")
+        .arg("fetch")
+        .arg("origin")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+    {
+        let _ = child.wait().await;
+    }
+
+    let local_head = output_into_string(
+        tokio::process::Command::new("git")
+            .arg("rev-parse")
+            .arg("HEAD")
+            .output()
+            .await,
+    );
+
+    // Try to acquire active branch name and then remote head commit for that branch
+    match tokio::process::Command::new("git")
+        .arg("rev-parse")
+        .arg("--abbrev-ref")
+        .arg("HEAD")
+        .output()
+        .then(|branch_res| async move {
+            let branch = match branch_res.as_ref() {
+                Ok(Output { status, stdout, .. }) if status.success() => {
+                    std::str::from_utf8(stdout)
+                        .map_err(|e| format!("Format error: {e:?}. Raw: {stdout:?}"))
+                }
+                _ => Err(output_into_string(branch_res)),
+            }?;
+
+            Ok(output_into_string(
+                tokio::process::Command::new("git")
+                    .arg("rev-parse")
+                    .arg(["origin/", branch.trim()].concat())
+                    .output()
+                    .await,
+            ))
+        })
+        .await
+    {
+        Ok(remote_head) => (local_head, remote_head),
+        Err(err) => (local_head, err),
+    }
 }

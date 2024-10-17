@@ -1,3 +1,4 @@
+pub mod actions_menu;
 pub mod check_docker;
 pub mod check_status;
 pub mod select_network;

@@ -2,7 +2,7 @@ use ethereum_types::Address;
 use std::{net::IpAddr, time::Duration};
 use strum_macros::Display;
 
-#[derive(Display)]
+#[derive(Display, Clone, PartialEq, Eq)]
 pub enum MessageType<'a> {
     #[strum(serialize = "Which network do you want to be onboarded to?")]
     NetworkRequest,
@@ -79,4 +79,16 @@ pub enum MessageType<'a> {
         serialize = "Please wait until your node is onboarded to the network, Left: {time_to_wait:?}"
     )]
     NodeOnboarding { time_to_wait: Duration },
+
+    #[strum(serialize = "You can now perform one of the following actions")]
+    SelectActionMenu,
+
+    #[strum(serialize = "📁 Send debug information to AirDao support team")]
+    LogsActionMenuItem,
+
+    #[strum(serialize = "🔍 Try to find and fix issues with your node setup")]
+    CheckActionMenuItem,
+
+    #[strum(serialize = "👋 Quit NOP")]
+    QuitActionMenuItem,
 }
