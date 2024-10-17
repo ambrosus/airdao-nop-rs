@@ -8,7 +8,8 @@ use std::{
 use crate::utils;
 
 pub fn is_docker_installed() -> anyhow::Result<bool> {
-    let docker_version_regexp = Regex::new(r"^Docker version ([0-9.\-a-z]+), build ([0-9a-f]+)")?;
+    let docker_version_regexp =
+        Regex::new(r"^Docker version ([0-9.\-a-z]+)(?:\+[^,]*)?, build ([0-9a-f]+)")?;
 
     let output = Command::new("docker").arg("-v").output()?;
     let stdout_str = str::from_utf8(&output.stdout)?;
