@@ -76,15 +76,19 @@ async fn run(config: &Config) -> Result<(), AppError> {
 
     cliclack::log::step(MessageType::DockerStarted)?;
 
-    let mut check_status = CheckStatusPhase::new(
-        web3::Web3::new(web3::transports::Http::new(&setup.network.rpc)?),
-        &setup.network,
-        setup.address,
-    )
-    .await?;
+    let web3_client_remote = web3::Web3::new(web3::transports::Http::new(&setup.network.rpc)?);
+    let web3_client_local =
+        web3::Web3::new(web3::transports::Http::new("http://127.0.0.1:8545")?);
+
+    let mut check_status =
+        CheckStatusPhase::new(web3_client_remote.clone(), &setup.network, setup.address).await?;
     check_status.run().await?;
 
-    let mut actions_menu = ActionsMenuPhase::new(config.discord_webhook_url.clone());
+    let mut actions_menu = ActionsMenuPhase::new(
+        config.discord_webhook_url.clone(),
+        web3_client_remote,
+        web3_client_local,
+    );
     loop {
         if actions_menu.quit {
             break;

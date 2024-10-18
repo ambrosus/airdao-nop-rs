@@ -6,7 +6,7 @@ use crate::{config::Network, state::State};
 
 pub struct DebugInfo {
     network: Option<Network>,
-    pub address: Option<Address>,
+    pub address: Address,
     pub timestamp: i64,
     cwd: Option<PathBuf>,
     os_release: String,
@@ -36,7 +36,8 @@ impl DebugInfo {
             network,
             address: private_key
                 .as_ref()
-                .map(super::secp256k1_signing_key_to_eth_address),
+                .map(super::secp256k1_signing_key_to_eth_address)
+                .unwrap_or_default(),
             timestamp: Utc::now().timestamp(),
             cwd: std::env::current_dir().ok(),
             os_release: super::get_os_release(),
@@ -51,6 +52,13 @@ impl DebugInfo {
             local_head,
             remote_head,
         })
+    }
+
+    pub fn network_name(&self) -> &str {
+        self.network
+            .as_ref()
+            .map(|network| network.name.as_str())
+            .unwrap_or_default()
     }
 }
 
@@ -78,11 +86,8 @@ impl std::fmt::Debug for DebugInfo {
                     Local Git Head: {}
                     Remote Git Head: {}
                 ",
-                self.address.unwrap_or_default(),
-                self.network
-                    .as_ref()
-                    .map(|network| network.name.as_str())
-                    .unwrap_or_default(),
+                self.address,
+                self.network_name(),
                 self.timestamp,
                 self.network
                     .as_ref()

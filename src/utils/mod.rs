@@ -5,7 +5,7 @@ pub mod logger;
 
 use backtrace::Backtrace;
 use ethereum_types::{Address, H160};
-use futures::{FutureExt, TryFutureExt};
+use futures::FutureExt;
 use log::error;
 use serde::{de, Deserialize};
 use sha3::{Digest, Keccak256};
@@ -191,6 +191,7 @@ pub fn get_memory_usage() -> String {
 pub fn get_docker_compose_logs() -> String {
     output_into_string(
         Command::new("docker-compose")
+            .current_dir(output_dir())
             .arg("logs")
             .arg("--tail=500")
             .output(),
@@ -244,4 +245,18 @@ pub async fn get_git_commits() -> (String, String) {
         Ok(remote_head) => (local_head, remote_head),
         Err(err) => (local_head, err),
     }
+}
+
+pub fn get_node_version() -> String {
+    output_into_string(
+        Command::new("docker")
+            .arg("inspect")
+            .arg("--format='{{ index .Config.Image }}'")
+            .arg("parity")
+            .arg("|")
+            .arg("cut")
+            .arg("-d':'")
+            .arg("-f2")
+            .output(),
+    )
 }

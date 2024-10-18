@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use ethereum_types::Address;
 use std::{net::IpAddr, time::Duration};
 use strum_macros::Display;
@@ -91,4 +92,25 @@ pub enum MessageType<'a> {
 
     #[strum(serialize = "👋 Quit NOP")]
     QuitActionMenuItem,
+
+    #[strum(serialize = "Checking...")]
+    Checking,
+
+    #[strum(serialize = "Syncing {progress}%... please wait")]
+    Syncing { progress: u64 },
+
+    #[strum(serialize = "Sync: OK")]
+    NotSyncing,
+
+    #[strum(serialize = "Fork: OK")]
+    NotForked,
+
+    #[strum(serialize = "Fork: Parity has forked...")]
+    Forked,
+
+    #[strum(serialize = "Logs received at {timestamp:?}")]
+    LogsReceivedAt { timestamp: DateTime<Utc> },
+
+    #[strum(serialize = "Failed send logs. {msg}")]
+    LogsSendError { msg: String },
 }
