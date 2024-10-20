@@ -17,6 +17,7 @@ impl DockerComposeFile {
     pub async fn new(
         input_file_path: PathBuf,
         output_file_path: PathBuf,
+        network_name: &str,
         network: &Network,
         address: &Address,
     ) -> Result<Self, AppError> {
@@ -38,7 +39,7 @@ impl DockerComposeFile {
                     output_file_path,
                     content: template
                         .replace("<ENTER_YOUR_ADDRESS_HERE>", &format!("{:?}", address))
-                        .replace("<ENTER_NETWORK_NAME_HERE>", &network.name)
+                        .replace("<ENTER_NETWORK_NAME_HERE>", &network_name)
                         .replace("<ENTER_DOMAIN_HERE>", &network.domain),
                 });
             }

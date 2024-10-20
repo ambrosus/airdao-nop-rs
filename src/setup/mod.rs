@@ -84,6 +84,7 @@ impl Setup {
         let docker_compose_file = DockerComposeFile::new(
             docker_template_file_path,
             output_dir.join(DOCKER_FILE_NAME),
+            &chainspec.name,
             &self.network,
             &self.address,
         )
