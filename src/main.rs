@@ -72,13 +72,12 @@ async fn run(config: &Config) -> Result<(), AppError> {
 
     cliclack::log::step(MessageType::DockerStarting)?;
 
-    utils::exec::run_docker()?;
+    utils::exec::run_docker_compose_up()?;
 
     cliclack::log::step(MessageType::DockerStarted)?;
 
     let web3_client_remote = web3::Web3::new(web3::transports::Http::new(&setup.network.rpc)?);
-    let web3_client_local =
-        web3::Web3::new(web3::transports::Http::new("http://127.0.0.1:8545")?);
+    let web3_client_local = web3::Web3::new(web3::transports::Http::new("http://127.0.0.1:8545")?);
 
     let mut check_status =
         CheckStatusPhase::new(web3_client_remote.clone(), &setup.network, setup.address).await?;

@@ -108,6 +108,35 @@ pub enum MessageType<'a> {
     #[strum(serialize = "Fork: Parity has forked...")]
     Forked,
 
+    #[strum(serialize = "Do you want to fix this issue?")]
+    AskFixForkIssue,
+
+    #[strum(serialize = "Fixing fork...")]
+    FixForkStepFixing,
+
+    #[strum(serialize = "Removing chains...")]
+    FixForkStepRemovingChains,
+
+    #[strum(serialize = "Downloading backup...")]
+    FixForkStepDownloadingBackup,
+
+    #[strum(serialize = "Fork fixed")]
+    FixForkStepFixed,
+
+    #[strum(serialize = "Git version: OK")]
+    GitVersionOk,
+
+    #[strum(serialize = "Git version: old version detected (Local: {local} Remote: {remote})!")]
+    GitVersionOld { local: String, remote: String },
+
+    #[strum(
+        serialize = "The NOP will be updated now and node will be restarted...\nYou can run NOP again after the update is complete."
+    )]
+    FixGitVersionStepUpdate,
+
+    #[strum(serialize = "Do you want to fix this issue?")]
+    AskFixGitVersionIssue,
+
     #[strum(serialize = "Logs received at {timestamp:?}")]
     LogsReceivedAt { timestamp: DateTime<Utc> },
 

@@ -1,4 +1,7 @@
+use std::path::PathBuf;
+
 use chrono::{DateTime, Utc};
+use cliclack::Confirm;
 use ethereum_types::U256;
 use futures_util::{future::BoxFuture, FutureExt};
 use serde::Deserialize;
@@ -12,7 +15,7 @@ use crate::{
     error::{self, AppError},
     messages,
     state::State,
-    utils::{self, debug_info::DebugInfo},
+    utils::{self, debug_info::DebugInfo, exec},
 };
 use messages::MessageType;
 
@@ -63,17 +66,7 @@ where
         }
     }
 
-    async fn check(&self) -> anyhow::Result<()> {
-        let State {
-            network: Some(network),
-            ..
-        } = State::read()?
-        else {
-            anyhow::bail!("Network configuration is missed in state")
-        };
-
-        cliclack::log::step(MessageType::Checking)?;
-
+    async fn check_sync(&self) -> anyhow::Result<()> {
         match self.web3_client_local.eth().syncing().await? {
             SyncState::Syncing(state) => {
                 cliclack::note(
@@ -94,7 +87,11 @@ where
             }
         }
 
-        let fork_status = match self
+        Ok(())
+    }
+
+    async fn check_fork(&self) -> anyhow::Result<MessageType> {
+        match self
             .web3_client_local
             .eth()
             .block(BlockId::Number(BlockNumber::Latest))
@@ -108,12 +105,76 @@ where
                 self.web3_client_local.eth().block(BlockId::Number(BlockNumber::Number(block_number))).await?,
                 Some(remote_block) if remote_block.hash == hash) =>
             {
-                MessageType::NotForked
+                Ok(MessageType::NotForked)
             }
-            _ => MessageType::Forked,
-        };
+            _ => Ok(MessageType::Forked),
+        }
+    }
 
-        cliclack::note("Fork check", fork_status)?;
+    async fn fix_fork(&self) -> anyhow::Result<()> {
+        cliclack::log::step(MessageType::FixForkStepFixing)?;
+
+        exec::run_docker_compose_down()?;
+
+        cliclack::log::step(MessageType::FixForkStepRemovingChains)?;
+
+        tokio::fs::remove_dir_all(utils::output_dir().join("./chains"))
+            .await
+            .or_else(|e| {
+                if e.kind() == tokio::io::ErrorKind::NotFound {
+                    Ok(())
+                } else {
+                    Err(e)
+                }
+            })?;
+
+        cliclack::log::step(MessageType::FixForkStepDownloadingBackup)?;
+
+        exec::run_download_backup("https://backup.ambrosus.io/blockchain.tgz").await?;
+
+        exec::run_docker_compose_up()?;
+
+        cliclack::log::step(MessageType::FixForkStepFixed)?;
+
+        Ok(())
+    }
+
+    async fn check_git_version(&self) -> MessageType {
+        let (local, remote) = utils::get_git_commits().await;
+
+        if local == remote {
+            MessageType::GitVersionOk
+        } else {
+            MessageType::GitVersionOld { local, remote }
+        }
+    }
+
+    async fn fix_git_version(&self) -> anyhow::Result<()> {
+        cliclack::log::step(MessageType::FixGitVersionStepUpdate)?;
+
+        exec::run_update(PathBuf::from("./update.sh")).await?;
+
+        std::process::exit(0)
+    }
+
+    async fn check(&self) -> anyhow::Result<()> {
+        self.check_sync().await?;
+
+        let fork_status = self.check_fork().await?;
+        cliclack::note("Fork check", &fork_status)?;
+        if fork_status == MessageType::Forked {
+            if cliclack::confirm(MessageType::AskFixForkIssue).interact()? {
+                self.fix_fork().await?;
+            }
+        }
+
+        let git_versiom_status = self.check_git_version().await;
+        cliclack::note("Git version check", &git_versiom_status)?;
+        if let MessageType::GitVersionOld { .. } = git_versiom_status {
+            if cliclack::confirm(MessageType::AskFixGitVersionIssue).interact()? {
+                self.fix_git_version().await?;
+            }
+        }
 
         Ok(())
     }
