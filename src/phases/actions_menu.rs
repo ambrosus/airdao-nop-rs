@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
-use cliclack::Confirm;
 use ethereum_types::U256;
 use futures_util::{future::BoxFuture, FutureExt};
 use serde::Deserialize;
@@ -102,7 +101,7 @@ where
                 hash,
                 ..
             }) if matches!(
-                self.web3_client_local.eth().block(BlockId::Number(BlockNumber::Number(block_number))).await?,
+                self.web3_client_remote.eth().block(BlockId::Number(BlockNumber::Number(block_number))).await?,
                 Some(remote_block) if remote_block.hash == hash) =>
             {
                 Ok(MessageType::NotForked)
