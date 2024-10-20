@@ -10,5 +10,5 @@ use futures_util::future::BoxFuture;
 use crate::error;
 
 pub trait Phase {
-    fn run<'a>(&'a mut self) -> BoxFuture<'a, Result<(), error::AppError>>;
+    fn run(&mut self) -> BoxFuture<'_, Result<(), error::AppError>>;
 }

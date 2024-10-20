@@ -24,7 +24,7 @@ enum PrivateKeyInputKind {
 }
 
 impl Phase for SelectPrivateKeyPhase {
-    fn run<'a>(&'a mut self) -> BoxFuture<'a, Result<(), error::AppError>> {
+    fn run(&mut self) -> BoxFuture<'_, Result<(), error::AppError>> {
         async {
             if self.private_key.is_none() {
                 match cliclack::select(MessageType::NoPrivateKey)

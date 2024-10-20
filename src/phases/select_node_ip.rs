@@ -18,7 +18,7 @@ impl SelectNodeIP {
 }
 
 impl Phase for SelectNodeIP {
-    fn run<'a>(&'a mut self) -> BoxFuture<'a, Result<(), error::AppError>> {
+    fn run(&mut self) -> BoxFuture<'_, Result<(), error::AppError>> {
         async {
             if self.node_ip.is_none() {
                 let my_ip = fetch_my_ip().await?;

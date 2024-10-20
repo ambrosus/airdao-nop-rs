@@ -22,7 +22,7 @@ impl DockerComposeFile {
     ) -> Result<Self, AppError> {
         let bytes = tokio::fs::read(&input_file_path).await?;
         let raw_text = std::str::from_utf8(&bytes)?;
-        let yaml_nodes = YamlLoader::load_from_str(&raw_text)?;
+        let yaml_nodes = YamlLoader::load_from_str(raw_text)?;
         let template = raw_text.to_owned();
 
         for node in yaml_nodes {

@@ -8,7 +8,10 @@ use futures::StreamExt;
 use k256::ecdsa::SigningKey;
 use rand::rngs::OsRng;
 use serde::Deserialize;
-use std::{net::IpAddr, path::PathBuf};
+use std::{
+    net::IpAddr,
+    path::{Path, PathBuf},
+};
 
 use crate::{config::Network, error::AppError, messages::MessageType, state::State};
 use docker_compose_file::DockerComposeFile;
@@ -56,7 +59,7 @@ impl Setup {
     fn templates_path() -> PathBuf {
         std::env::var("TEMPLATE_DIRECTORY")
             .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from("./").join(DEFAULT_TEMPLATES_PATH.to_string()))
+            .unwrap_or_else(|_| PathBuf::from("./").join(DEFAULT_TEMPLATES_PATH))
     }
 
     pub async fn run(&self) -> Result<(), AppError> {
@@ -113,7 +116,7 @@ impl Setup {
 
     async fn download_and_save_chainspec_file(
         &self,
-        output_dir: &PathBuf,
+        output_dir: &Path,
     ) -> Result<Chainspec, AppError> {
         let chain_spec_file_path = output_dir.join(CHAIN_DESCRIPTION_FILE_NAME);
         let mut chain_spec_file = tokio::fs::File::create(&chain_spec_file_path).await?;

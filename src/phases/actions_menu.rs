@@ -161,10 +161,10 @@ where
 
         let fork_status = self.check_fork().await?;
         cliclack::note("Fork check", &fork_status)?;
-        if fork_status == MessageType::Forked {
-            if cliclack::confirm(MessageType::AskFixForkIssue).interact()? {
-                self.fix_fork().await?;
-            }
+        if fork_status == MessageType::Forked
+            && cliclack::confirm(MessageType::AskFixForkIssue).interact()?
+        {
+            self.fix_fork().await?;
         }
 
         let git_versiom_status = self.check_git_version().await;
@@ -250,7 +250,7 @@ impl<T: Transport + Send + Sync> Phase for ActionsMenuPhase<T>
 where
     <T as web3::Transport>::Out: Send,
 {
-    fn run<'a>(&'a mut self) -> BoxFuture<'a, Result<(), error::AppError>> {
+    fn run(&mut self) -> BoxFuture<'_, Result<(), error::AppError>> {
         async {
             let select = cliclack::select(MessageType::SelectActionMenu)
                 .items(
@@ -260,9 +260,9 @@ where
                         MessageType::QuitActionMenuItem,
                     ]
                     .into_iter()
-                    .filter_map(|item| {
+                    .map(|item| {
                         let name = item.to_string();
-                        Some((item, name, ""))
+                        (item, name, "")
                     })
                     .collect::<Vec<_>>()),
                 )

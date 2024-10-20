@@ -131,7 +131,7 @@ pub fn output_dir() -> PathBuf {
     PathBuf::from(
         std::env::var("OUTPUT_DIRECTORY")
             .as_deref()
-            .unwrap_or_else(|_| DEFAULT_OUTPUT_DIRECTORY),
+            .unwrap_or(DEFAULT_OUTPUT_DIRECTORY),
     )
 }
 

@@ -24,7 +24,7 @@ impl<'a> SelectNetworkPhase<'a> {
 }
 
 impl Phase for SelectNetworkPhase<'_> {
-    fn run<'a>(&'a mut self) -> BoxFuture<'a, Result<(), error::AppError>> {
+    fn run(&mut self) -> BoxFuture<'_, Result<(), error::AppError>> {
         async {
             let Some(initial_network) = self.available_networks.keys().next() else {
                 return Err(anyhow!("No networks are defined").into());

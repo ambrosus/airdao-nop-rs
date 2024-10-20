@@ -14,7 +14,7 @@ impl ParityConfigFile {
         output_file_path: PathBuf,
         address: &Address,
         ip: &IpAddr,
-        validator_version: &String,
+        validator_version: &str,
     ) -> Result<Self, AppError> {
         let bytes = tokio::fs::read(&input_file_path).await?;
         let raw_text = std::str::from_utf8(&bytes)?;

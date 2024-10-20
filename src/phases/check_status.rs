@@ -207,7 +207,7 @@ impl<T: Transport + Send + Sync> Phase for CheckStatusPhase<T>
 where
     <T as web3::Transport>::Out: Send,
 {
-    fn run<'a>(&'a mut self) -> BoxFuture<'a, Result<(), error::AppError>> {
+    fn run(&mut self) -> BoxFuture<'_, Result<(), error::AppError>> {
         async {
             match self.get_apollo_info(self.node_addr).await? {
                 ApolloInfo {

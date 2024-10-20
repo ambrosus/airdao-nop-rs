@@ -8,7 +8,7 @@ use messages::MessageType;
 pub struct DockerAvailablePhase {}
 
 impl Phase for DockerAvailablePhase {
-    fn run<'a>(&'a mut self) -> BoxFuture<'a, Result<(), error::AppError>> {
+    fn run(&mut self) -> BoxFuture<'_, Result<(), error::AppError>> {
         async {
             if exec::is_docker_installed()? {
                 cliclack::note("Docker check", MessageType::DockerInstalled)?;
