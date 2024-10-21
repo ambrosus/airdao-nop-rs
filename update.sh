@@ -13,6 +13,7 @@ sysctl -p /etc/sysctl.d/10-airdao.conf
 
 git checkout main
 git pull origin main
+git submodule update --init --recursive
 
 chmod +x run-update.sh
 source run-update.sh

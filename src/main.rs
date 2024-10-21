@@ -7,6 +7,7 @@ pub mod setup;
 pub mod state;
 pub mod utils;
 
+use anyhow::anyhow;
 use console::style;
 use error::AppError;
 use messages::MessageType;
@@ -34,11 +35,15 @@ async fn main() -> Result<(), AppError> {
         path: "./config/custom.json",
     }))?;
 
-    if let Err(e) = run(&config).await {
-        cliclack::log::error(e).map_err(AppError::from)
+    let run_result = if utils::is_update_run() {
+        run_update().await
     } else {
-        Ok(())
-    }
+        run(&config).await
+    };
+
+    run_result.inspect_err(|e| {
+        let _ = cliclack::log::error(e);
+    })
 }
 
 async fn run(config: &Config) -> Result<(), AppError> {
@@ -95,6 +100,27 @@ async fn run(config: &Config) -> Result<(), AppError> {
 
         actions_menu.run().await?;
     }
+
+    Ok(())
+}
+
+async fn run_update() -> Result<(), AppError> {
+    cliclack::clear_screen()?;
+
+    let state = state::State::read()?;
+    if !state.is_complete() {
+        return Err(anyhow!("State is missing some data").into());
+    }
+
+    let setup = Setup::new(state)?;
+    setup.run().await?;
+
+    cliclack::log::step(MessageType::DockerStarting)?;
+
+    utils::exec::run_docker_compose_pull()?;
+    utils::exec::run_docker_compose_up()?;
+
+    cliclack::log::step(MessageType::DockerStarted)?;
 
     Ok(())
 }

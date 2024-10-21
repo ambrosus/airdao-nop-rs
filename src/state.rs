@@ -74,4 +74,11 @@ impl State {
 
         writer.flush().map_err(anyhow::Error::from)
     }
+
+    pub fn is_complete(&self) -> bool {
+        self.network.is_some()
+            && self.private_key.is_some()
+            && self.address.is_some()
+            && self.ip.is_some()
+    }
 }

@@ -260,3 +260,10 @@ pub fn get_node_version() -> String {
             .output(),
     )
 }
+
+pub fn is_update_run() -> bool {
+    match std::env::var("RUN_UPDATE").as_deref() {
+        Ok("true") => true,
+        _ => false,
+    }
+}

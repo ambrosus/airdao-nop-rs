@@ -23,6 +23,7 @@ pub fn run_docker_compose_up() -> anyhow::Result<()> {
 
     match Command::new("docker-compose")
         .current_dir(output_dir)
+        .arg("--compatibility")
         .arg("up")
         .arg("-d")
         .output()?
