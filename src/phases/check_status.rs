@@ -177,12 +177,11 @@ where
     async fn get_apollo_info(&self, node_addr: Address) -> anyhow::Result<ApolloInfo> {
         let stake = self.get_stake(node_addr).await?;
         let lock_id = self.get_withdraw_lock_id(node_addr).await?;
-        let lock = self.get_withdraw_lock(lock_id).await?;
+        let _ = self.get_withdraw_lock(lock_id).await?;
         let is_onboarded = self.is_onboarded(node_addr).await?;
 
         Ok(ApolloInfo {
             apollo: stake,
-            withdraw_lock: lock.into(),
             is_onboarded,
         })
     }
@@ -278,7 +277,7 @@ pub struct Lock {
 #[derive(Debug)]
 pub struct ApolloInfo {
     apollo: Stake,
-    withdraw_lock: Option<WithdrawLock>,
+    // withdraw_lock: Option<WithdrawLock>,
     is_onboarded: bool,
 }
 
