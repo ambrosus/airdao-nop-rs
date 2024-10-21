@@ -39,7 +39,7 @@ impl DockerComposeFile {
                     output_file_path,
                     content: template
                         .replace("<ENTER_YOUR_ADDRESS_HERE>", &format!("{:?}", address))
-                        .replace("<ENTER_NETWORK_NAME_HERE>", &network_name)
+                        .replace("<ENTER_NETWORK_NAME_HERE>", network_name)
                         .replace("<ENTER_DOMAIN_HERE>", &network.domain),
                 });
             }

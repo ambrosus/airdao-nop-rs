@@ -1,4 +1,5 @@
 mod docker_compose_file;
+pub mod keystore;
 mod parity_config_file;
 pub mod utils;
 
@@ -104,13 +105,20 @@ impl Setup {
         let random_password = utils::generate_password();
         tokio::fs::write(output_dir.join(PASSWORD_FILE_NAME), &random_password).await?;
 
-        eth_keystore::encrypt_key(
-            output_dir,
+        keystore::encrypt_key(
+            &output_dir,
             &mut OsRng,
             self.private_key.to_bytes(),
-            random_password,
+            &random_password,
             Some(KEY_FILE_NAME),
-        )?;
+        )
+        .await?;
+
+        let saved_key = eth_keystore::decrypt_key(output_dir.join(KEY_FILE_NAME), random_password);
+        if !matches!(saved_key, Ok(private) if sha3::digest::generic_array::GenericArray::clone_from_slice(private.as_slice()) == self.private_key.to_bytes())
+        {
+            return Err(anyhow::anyhow!("Stored private key mismatch!").into());
+        }
 
         cliclack::note("Setup status", MessageType::SetupCompleted).map_err(AppError::from)
     }
