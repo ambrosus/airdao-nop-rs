@@ -13,12 +13,11 @@ services:
       - '30303:30303/tcp'
       - '30303:30303/udp'
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./chain.json:/app/chain.json
-      - ./password.pwds:/app/password.pwds
-      - ./parity_config.toml:/app/parity_config.toml
-      - ./keyfile:/app/keys/<ENTER_NETWORK_NAME_HERE>/keyfile
-      - ./chains:/app/chains
+      - <ENTER_HOST_OUTPUT_PATH_HERE>/chain.json:/app/chain.json
+      - <ENTER_HOST_OUTPUT_PATH_HERE>/password.pwds:/app/password.pwds
+      - <ENTER_HOST_OUTPUT_PATH_HERE>/parity_config.toml:/app/parity_config.toml
+      - <ENTER_HOST_OUTPUT_PATH_HERE>/keyfile:/app/keys/<ENTER_NETWORK_NAME_HERE>/keyfile
+      - <ENTER_HOST_OUTPUT_PATH_HERE>/chains:/app/chains
 
   ethstats-client:
     image: ghcr.io/ambrosus/eth-net-intelligence-api

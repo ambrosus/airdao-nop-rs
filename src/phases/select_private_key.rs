@@ -4,7 +4,10 @@ use k256::ecdsa::SigningKey;
 use rand::rngs::OsRng;
 
 use super::Phase;
-use crate::{error, messages, utils};
+use crate::{
+    error::{self, AppError},
+    messages, utils,
+};
 use messages::MessageType;
 
 pub struct SelectPrivateKeyPhase {
@@ -76,7 +79,7 @@ impl Phase for SelectPrivateKeyPhase {
     }
 }
 
-fn validate_private_key_input(input: &str, interactive: bool) -> anyhow::Result<()> {
+fn validate_private_key_input(input: &str, interactive: bool) -> Result<(), AppError> {
     let input = utils::skip_hex_prefix(input);
 
     let valid_length = if interactive {
@@ -85,12 +88,12 @@ fn validate_private_key_input(input: &str, interactive: bool) -> anyhow::Result<
         input.len() == 64
     };
     if !valid_length {
-        anyhow::bail!("{}", MessageType::PrivateKeyInvalidLength);
+        return Err(anyhow!("{}", MessageType::PrivateKeyInvalidLength).into());
     }
 
     let invalid_format = input.chars().any(|c| !c.is_ascii_hexdigit());
     if invalid_format {
-        anyhow::bail!("{}", MessageType::PrivateKeyInvalidFormat);
+        return Err(anyhow!("{}", MessageType::PrivateKeyInvalidFormat).into());
     }
 
     Ok(())

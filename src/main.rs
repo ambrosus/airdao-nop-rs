@@ -8,6 +8,7 @@ pub mod state;
 pub mod utils;
 
 use anyhow::anyhow;
+use clap::{Parser, Subcommand};
 use console::style;
 use error::AppError;
 use messages::MessageType;
@@ -35,10 +36,10 @@ async fn main() -> Result<(), AppError> {
         path: "./config/custom.json",
     }))?;
 
-    let run_result = if utils::is_update_run() {
-        run_update().await
-    } else {
-        run(&config).await
+    let cli = Cli::parse();
+    let run_result = match &cli.command {
+        Some(Commands::Update) => run_update().await,
+        None => run(&config).await,
     };
 
     run_result.inspect_err(|e| {
@@ -82,7 +83,11 @@ async fn run(config: &Config) -> Result<(), AppError> {
     cliclack::log::step(MessageType::DockerStarted)?;
 
     let web3_client_remote = web3::Web3::new(web3::transports::Http::new(&setup.network.rpc)?);
-    let web3_client_local = web3::Web3::new(web3::transports::Http::new("http://127.0.0.1:8545")?);
+    let web3_client_local = web3::Web3::new(web3::transports::Http::new(
+        std::env::var("PARITY_URL")
+            .as_deref()
+            .unwrap_or("http://127.0.0.1:8545"),
+    )?);
 
     let mut check_status =
         CheckStatusPhase::new(web3_client_remote.clone(), &setup.network, setup.address).await?;
@@ -125,7 +130,7 @@ async fn run_update() -> Result<(), AppError> {
     Ok(())
 }
 
-fn print_intro() -> anyhow::Result<()> {
+fn print_intro() -> Result<(), AppError> {
     cliclack::intro(
         style(
             r#"
@@ -155,5 +160,18 @@ fn print_intro() -> anyhow::Result<()> {
         .on_black()
         .blue(),
     )
-    .map_err(anyhow::Error::from)
+    .map_err(AppError::from)
+}
+
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+#[command(propagate_version = true)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Update,
 }

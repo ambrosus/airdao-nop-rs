@@ -13,25 +13,37 @@ pub enum AppError {
     IpAddress(#[from] std::net::AddrParseError),
     /// Reqwest crate error
     #[error("Http request failed: {0}")]
-    ReqwestError(#[from] reqwest::Error),
+    Reqwest(#[from] reqwest::Error),
     /// SerDe JSON error
     #[error("SerDe JSON error: {0}")]
-    SerdeJsonError(#[from] serde_json::Error),
+    SerdeJson(#[from] serde_json::Error),
     /// Utf-8 parser error
     #[error("Utf-8 parse error: {0}")]
-    Utf8Error(#[from] std::str::Utf8Error),
+    Utf8(#[from] std::str::Utf8Error),
     /// YAML reader error
     #[error("YAML scan error: {0}")]
-    YamlScanError(#[from] yaml_rust2::ScanError),
+    YamlScan(#[from] yaml_rust2::ScanError),
     /// Keystore error
     #[error("Keystore error: {0}")]
-    KeystoreError(#[from] eth_keystore::KeystoreError),
+    Keystore(#[from] eth_keystore::KeystoreError),
     /// Config error
     #[error("Config error: {0}")]
-    ConfigError(#[from] config::ConfigError),
+    Config(#[from] config::ConfigError),
     /// Web3 error
     #[error("Web3 error: {0}")]
     Web3(#[from] web3::Error),
+    /// Regex error
+    #[error("RegExp error: {0}")]
+    Regexp(#[from] regex::Error),
+    /// Ethers crate parse error
+    #[error("Ethers abi parse error: {0}")]
+    EthersParse(#[from] ethers::abi::ParseError),
+    /// Ethers crate abi error
+    #[error("Ethers abi error: {0}")]
+    EthersAbi(#[from] ethers::abi::Error),
+    /// Ethers crate invalid output type error
+    #[error("Ethers invalid output type error: {0}")]
+    EthersOutputType(#[from] ethers::abi::InvalidOutputType),
     /// Generic
     #[error("{0:#}")]
     Anyhow(#[from] anyhow::Error),

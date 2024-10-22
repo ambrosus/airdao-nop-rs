@@ -48,7 +48,7 @@ where
     let mut iv = vec![0u8; DEFAULT_IV_SIZE];
     rng.fill_bytes(iv.as_mut_slice());
 
-    let encryptor = Aes128Ctr::new(&key[..16], &iv[..16]).expect("invalid length");
+    let encryptor = Aes128Ctr::new(&key[..16], &iv[..16])?;
 
     let mut ciphertext = pk.as_ref().to_vec();
     encryptor.apply_keystream(&mut ciphertext);

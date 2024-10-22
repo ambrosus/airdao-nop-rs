@@ -1,9 +1,9 @@
-use std::path::PathBuf;
-
+use anyhow::anyhow;
 use chrono::{DateTime, Utc};
 use ethereum_types::U256;
 use futures_util::{future::BoxFuture, FutureExt};
 use serde::Deserialize;
+use std::path::PathBuf;
 use web3::{
     types::{Block, BlockId, BlockNumber, SyncState},
     Transport, Web3,
@@ -65,7 +65,7 @@ where
         }
     }
 
-    async fn check_sync(&self) -> anyhow::Result<()> {
+    async fn check_sync(&self) -> Result<(), AppError> {
         match self.web3_client_local.eth().syncing().await? {
             SyncState::Syncing(state) => {
                 cliclack::note(
@@ -89,7 +89,7 @@ where
         Ok(())
     }
 
-    async fn check_fork(&self) -> anyhow::Result<MessageType> {
+    async fn check_fork(&self) -> Result<MessageType, AppError> {
         match self
             .web3_client_local
             .eth()
@@ -110,7 +110,7 @@ where
         }
     }
 
-    async fn fix_fork(&self) -> anyhow::Result<()> {
+    async fn fix_fork(&self) -> Result<(), AppError> {
         cliclack::log::step(MessageType::FixForkStepFixing)?;
 
         exec::run_docker_compose_down()?;
@@ -139,7 +139,7 @@ where
     }
 
     async fn check_git_version(&self) -> MessageType {
-        let (local, remote) = utils::get_git_commits().await;
+        let (local, remote) = exec::get_git_commits().await;
 
         if local == remote {
             MessageType::GitVersionOk
@@ -148,7 +148,7 @@ where
         }
     }
 
-    async fn fix_git_version(&self) -> anyhow::Result<()> {
+    async fn fix_git_version(&self) -> Result<(), AppError> {
         cliclack::log::step(MessageType::FixGitVersionStepUpdate)?;
 
         exec::run_update(PathBuf::from("./update.sh")).await?;
@@ -156,7 +156,7 @@ where
         std::process::exit(0)
     }
 
-    async fn check(&self) -> anyhow::Result<()> {
+    async fn check(&self) -> Result<(), AppError> {
         self.check_sync().await?;
 
         let fork_status = self.check_fork().await?;
@@ -178,16 +178,16 @@ where
         Ok(())
     }
 
-    async fn send_logs(&self) -> anyhow::Result<()> {
+    async fn send_logs(&self) -> Result<(), AppError> {
         let State {
             ip: Some(ip_address),
             ..
         } = State::read()?
         else {
-            anyhow::bail!("IP configuration is missed in state")
+            return Err(anyhow!("IP configuration is missed in state").into());
         };
 
-        let node_version = utils::get_node_version();
+        let node_version = exec::get_node_version();
         let debug_info = DebugInfo::collect().await?;
         let title = format!("{:?}-{}", debug_info.address, debug_info.timestamp);
 
@@ -242,7 +242,7 @@ where
             }
         }
 
-        todo!()
+        Ok(())
     }
 }
 

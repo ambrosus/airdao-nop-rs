@@ -2,7 +2,8 @@ use chrono::Utc;
 use ethereum_types::Address;
 use std::{fmt::write, path::PathBuf};
 
-use crate::{config::Network, state::State};
+use super::exec;
+use crate::{config::Network, error::AppError, state::State};
 
 pub struct DebugInfo {
     network: Option<Network>,
@@ -23,14 +24,14 @@ pub struct DebugInfo {
 }
 
 impl DebugInfo {
-    pub async fn collect() -> anyhow::Result<Self> {
+    pub async fn collect() -> Result<Self, AppError> {
         let State {
             network,
             private_key,
             ..
         } = State::read()?;
 
-        let (local_head, remote_head) = super::get_git_commits().await;
+        let (local_head, remote_head) = exec::get_git_commits().await;
 
         Ok(Self {
             network,
@@ -40,15 +41,15 @@ impl DebugInfo {
                 .unwrap_or_default(),
             timestamp: Utc::now().timestamp(),
             cwd: std::env::current_dir().ok(),
-            os_release: super::get_os_release(),
-            memory_info: super::get_mem_info(),
-            directory_contents: super::get_directory_contents(None),
-            output_directory_contents: super::get_directory_contents(Some(super::output_dir())),
-            disk_block_info: super::get_disk_block_info(),
-            disk_inodes_info: super::get_disk_inodes_info(),
-            process_tree: super::get_process_tree(),
-            memory_usage: super::get_memory_usage(),
-            compose_logs: super::get_docker_compose_logs(),
+            os_release: exec::get_os_release(),
+            memory_info: exec::get_mem_info(),
+            directory_contents: exec::get_directory_contents(None),
+            output_directory_contents: exec::get_directory_contents(Some(super::output_dir())),
+            disk_block_info: exec::get_disk_block_info(),
+            disk_inodes_info: exec::get_disk_inodes_info(),
+            process_tree: exec::get_process_tree(),
+            memory_usage: exec::get_memory_usage(),
+            compose_logs: exec::get_docker_compose_logs(),
             local_head,
             remote_head,
         })

@@ -40,7 +40,13 @@ impl DockerComposeFile {
                     content: template
                         .replace("<ENTER_YOUR_ADDRESS_HERE>", &format!("{:?}", address))
                         .replace("<ENTER_NETWORK_NAME_HERE>", network_name)
-                        .replace("<ENTER_DOMAIN_HERE>", &network.domain),
+                        .replace("<ENTER_DOMAIN_HERE>", &network.domain)
+                        .replace(
+                            "<ENTER_HOST_OUTPUT_PATH_HERE>",
+                            std::env::var("HOST_OUTPUT_DIRECTORY")
+                                .as_deref()
+                                .unwrap_or("."),
+                        ),
                 });
             }
         }

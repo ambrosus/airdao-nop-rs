@@ -4,7 +4,10 @@ use anyhow::anyhow;
 use futures_util::{future::BoxFuture, FutureExt};
 
 use super::Phase;
-use crate::{error, messages};
+use crate::{
+    error::{self, AppError},
+    messages,
+};
 use messages::MessageType;
 
 pub struct SelectNodeIP {
@@ -45,32 +48,32 @@ impl Phase for SelectNodeIP {
     }
 }
 
-async fn fetch_my_ip() -> anyhow::Result<IpAddr> {
+async fn fetch_my_ip() -> Result<IpAddr, AppError> {
     let res = reqwest::get("https://api.ipify.org/").await?;
     let text = res.text().await?;
-    IpAddr::from_str(&text).map_err(anyhow::Error::from)
+    IpAddr::from_str(&text).map_err(AppError::from)
 }
 
-fn validate_ip_input(input: &str, interactive: bool) -> anyhow::Result<()> {
+fn validate_ip_input(input: &str, interactive: bool) -> Result<(), AppError> {
     let valid_length = if interactive {
         input.len() <= 15
     } else {
         input.len() >= 7 && input.len() <= 15
     };
     if !valid_length {
-        anyhow::bail!("{}", MessageType::NodeIpInvalidFormat { ip: input });
+        return Err(anyhow!("{}", MessageType::NodeIpInvalidFormat { ip: input }).into());
     }
 
     let invalid_format = input.chars().any(|c| !c.is_ascii_digit() && c != '.');
     if invalid_format {
-        anyhow::bail!("{}", MessageType::NodeIpInvalidFormat { ip: input });
+        return Err(anyhow!("{}", MessageType::NodeIpInvalidFormat { ip: input }).into());
     }
 
     if interactive {
         Ok(())
     } else {
         IpAddr::from_str(input)
-            .map_err(|_| anyhow!("{}", MessageType::NodeIpInvalidFormat { ip: input }))
+            .map_err(|_| anyhow!("{}", MessageType::NodeIpInvalidFormat { ip: input }).into())
             .map(|_| ())
     }
 }

@@ -9,7 +9,7 @@ use std::{collections::HashMap, time::Duration};
 use web3::{types::CallRequest, Transport, Web3};
 
 use super::Phase;
-use crate::{config::Network, contract::EthContract, error, messages};
+use crate::{config::Network, contract::EthContract, error::AppError, messages};
 use messages::MessageType;
 
 const DEPLOYMENTS_JSON: [(u64, &str); 3] = [
@@ -45,7 +45,7 @@ where
         web3_client: Web3<T>,
         network: &Network,
         node_addr: Address,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self, AppError> {
         let chain_id = web3_client.eth().chain_id().await?.as_u64();
         let mut deployments = DEPLOYMENTS_JSON
             .iter()
@@ -75,7 +75,7 @@ where
         contract: Address,
         function: &Function,
         params: P,
-    ) -> anyhow::Result<R> {
+    ) -> Result<R, AppError> {
         let input = function.encode_input(&params.into_tokens())?;
 
         let output = self
@@ -97,7 +97,7 @@ where
 
         let decoded = function.decode_output(&output.0)?;
 
-        <R>::from_tokens(decoded).map_err(anyhow::Error::from)
+        <R>::from_tokens(decoded).map_err(AppError::from)
     }
 
     #[allow(unused)]
@@ -106,12 +106,12 @@ where
         contract: Address,
         signature: &str,
         params: P,
-    ) -> anyhow::Result<R> {
+    ) -> Result<R, AppError> {
         let eth_fn = ethers::abi::AbiParser::default().parse_function(signature)?;
         self.query(contract, &eth_fn, params).await
     }
 
-    async fn get_stake(&self, node_addr: Address) -> anyhow::Result<Stake> {
+    async fn get_stake(&self, node_addr: Address) -> Result<Stake, AppError> {
         let contract = self
             .contracts
             .get("ServerNodesManager")
@@ -121,7 +121,7 @@ where
             .await
     }
 
-    async fn get_withdraw_lock_id(&self, node_addr: Address) -> anyhow::Result<U256> {
+    async fn get_withdraw_lock_id(&self, node_addr: Address) -> Result<U256, AppError> {
         let contract = self
             .contracts
             .get("ServerNodesManager")
@@ -135,7 +135,7 @@ where
         .await
     }
 
-    async fn get_withdraw_lock(&self, lock_id: U256) -> anyhow::Result<Lock> {
+    async fn get_withdraw_lock(&self, lock_id: U256) -> Result<Lock, AppError> {
         let contract = self
             .contracts
             .get("LockKeeper")
@@ -145,7 +145,7 @@ where
             .await
     }
 
-    async fn is_onboarded(&self, node_addr: Address) -> anyhow::Result<bool> {
+    async fn is_onboarded(&self, node_addr: Address) -> Result<bool, AppError> {
         let contract = self
             .contracts
             .get("ValidatorSet")
@@ -160,7 +160,7 @@ where
         .map(|stake_val| !stake_val.is_zero())
     }
 
-    async fn get_onboarding_delay(&self, node_addr: Address) -> anyhow::Result<U256> {
+    async fn get_onboarding_delay(&self, node_addr: Address) -> Result<U256, AppError> {
         let contract = self
             .contracts
             .get("ServerNodesManager")
@@ -174,7 +174,7 @@ where
         .await
     }
 
-    async fn get_apollo_info(&self, node_addr: Address) -> anyhow::Result<ApolloInfo> {
+    async fn get_apollo_info(&self, node_addr: Address) -> Result<ApolloInfo, AppError> {
         let stake = self.get_stake(node_addr).await?;
         let lock_id = self.get_withdraw_lock_id(node_addr).await?;
         let _ = self.get_withdraw_lock(lock_id).await?;
@@ -190,7 +190,7 @@ where
         &self,
         node_addr: Address,
         stake: &Stake,
-    ) -> anyhow::Result<Duration> {
+    ) -> Result<Duration, AppError> {
         let onboarding_delay = self.get_onboarding_delay(node_addr).await?;
         let now = Utc::now();
         let seconds_to_wait = onboarding_delay
@@ -206,7 +206,7 @@ impl<T: Transport + Send + Sync> Phase for CheckStatusPhase<T>
 where
     <T as web3::Transport>::Out: Send,
 {
-    fn run(&mut self) -> BoxFuture<'_, Result<(), error::AppError>> {
+    fn run(&mut self) -> BoxFuture<'_, Result<(), AppError>> {
         async {
             match self.get_apollo_info(self.node_addr).await? {
                 ApolloInfo {

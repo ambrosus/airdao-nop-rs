@@ -11,6 +11,7 @@ use std::{
 
 use crate::{
     config::Network,
+    error::AppError,
     utils::{
         self,
         config::{ConfigPath, JsonConfig},
@@ -46,7 +47,7 @@ impl State {
         }
     }
 
-    pub fn read() -> anyhow::Result<Self> {
+    pub fn read() -> Result<Self, AppError> {
         let res = Self::load_json(Self::path());
 
         if matches!(&res, Err(ConfigError::Foreign(e))
@@ -63,16 +64,16 @@ impl State {
                 .map(utils::secp256k1_signing_key_to_eth_address);
             state
         })
-        .map_err(anyhow::Error::from)
+        .map_err(AppError::from)
     }
 
-    pub fn write(&self) -> anyhow::Result<()> {
+    pub fn write(&self) -> Result<(), AppError> {
         let file = File::create(Self::path())?;
         let mut writer = BufWriter::new(file);
 
         serde_json::to_writer_pretty(&mut writer, &self)?;
 
-        writer.flush().map_err(anyhow::Error::from)
+        writer.flush().map_err(AppError::from)
     }
 
     pub fn is_complete(&self) -> bool {
