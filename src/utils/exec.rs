@@ -183,6 +183,7 @@ pub fn get_docker_compose_logs() -> String {
     )
 }
 
+#[allow(unused)]
 pub async fn get_git_commits() -> (String, String) {
     if let Ok(mut child) = tokio::process::Command::new("git")
         .arg("fetch")
@@ -233,15 +234,23 @@ pub async fn get_git_commits() -> (String, String) {
 }
 
 pub fn get_node_version() -> String {
-    super::output_into_string(
-        Command::new("docker")
-            .arg("inspect")
-            .arg("--format='{{ index .Config.Image }}'")
-            .arg("parity")
-            .arg("|")
-            .arg("cut")
-            .arg("-d':'")
-            .arg("-f2")
-            .output(),
-    )
+    let res = Command::new("docker")
+        .stdin(std::process::Stdio::piped())
+        .arg("inspect")
+        .arg("--format='{{ index .Config.Image }}'")
+        .arg("parity")
+        .output();
+
+    let success = matches!(&res, Ok(Output { status, .. }) if status.success());
+    let output = super::output_into_string(res);
+
+    if success {
+        let Some((_, version)) = output.trim().trim_matches('\'').split_once(':') else {
+            return output;
+        };
+
+        version.to_owned()
+    } else {
+        output
+    }
 }

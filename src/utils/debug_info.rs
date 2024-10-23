@@ -19,8 +19,7 @@ pub struct DebugInfo {
     process_tree: String,
     memory_usage: String,
     compose_logs: String,
-    local_head: String,
-    remote_head: String,
+    build: Option<String>,
 }
 
 impl DebugInfo {
@@ -31,7 +30,7 @@ impl DebugInfo {
             ..
         } = State::read()?;
 
-        let (local_head, remote_head) = exec::get_git_commits().await;
+        // let (local_head, remote_head) = exec::get_git_commits().await;
 
         Ok(Self {
             network,
@@ -50,8 +49,7 @@ impl DebugInfo {
             process_tree: exec::get_process_tree(),
             memory_usage: exec::get_memory_usage(),
             compose_logs: exec::get_docker_compose_logs(),
-            local_head,
-            remote_head,
+            build: std::env::var("CARGO_PKG_VERSION").ok(),
         })
     }
 
@@ -84,8 +82,7 @@ impl std::fmt::Debug for DebugInfo {
                     Process Tree: {}
                     Memory Usage: {}
                     Docker logs: {}
-                    Local Git Head: {}
-                    Remote Git Head: {}
+                    Build: {}
                 ",
                 self.address,
                 self.network_name(),
@@ -104,8 +101,7 @@ impl std::fmt::Debug for DebugInfo {
                 self.process_tree,
                 self.memory_usage,
                 self.compose_logs,
-                self.local_head,
-                self.remote_head
+                self.build.as_deref().unwrap_or_default(),
             ),
         )
     }
