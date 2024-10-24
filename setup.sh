@@ -60,6 +60,9 @@ else
     exit 1
 fi
 
+# Revert /etc/needrestart/needrestart.conf to original state after installing required packages
+sed -i 's/^\$nrconf{restart} = '\''a'\'';/$nrconf{restart} = '\''i'\'';/' /etc/needrestart/needrestart.conf
+
 git clone https://github.com/ambrosus/airdao-nop-rs.git
 cd airdao-nop-rs || return
 

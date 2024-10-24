@@ -97,7 +97,7 @@ jobs:
 
     - name: Set Release Version
       id: set_version
-      run: echo "RELEASE_VERSION=${{ github.event.release.tag_name }}-x86_64-ubuntu-20.04" >> $GITHUB_ENV
+      run: echo "RELEASE_VERSION=${{ github.event.release.tag_name }}-x86-64-old" >> $GITHUB_ENV
 
     - name: Archive 
       run: zip -j airdao-nop-rs-x86-64-old.zip target/x86_64-unknown-linux-gnu/release/airdao-nop-rs
