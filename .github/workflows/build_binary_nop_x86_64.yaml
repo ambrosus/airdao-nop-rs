@@ -1,0 +1,61 @@
+name: Build and Upload Rust Binary
+
+on:
+  release:
+    types: [published]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.81
+        override: true
+        components: rustfmt, clippy
+        target: x86_64-unknown-linux-gnu
+
+    - name: Cache cargo registry and git dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Build binary
+      run: |
+        git submodule update --init --recursive
+        RUSTFLAGS='-C link-arg=-s' cargo build --release --target x86_64-unknown-linux-gnu
+
+    - name: Get release
+      id: get_release
+      uses: bruceadams/get-release@v1.2.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+
+    - name: Set Release Version
+      id: set_version
+      run: echo "RELEASE_VERSION=${{ github.event.release.tag_name }}-x86_64" >> $GITHUB_ENV
+
+    - name: Archive 
+      run: zip -j airdao-nop-rs-ubuntu.zip target/x86_64-unknown-linux-gnu/release/airdao-nop-rs
+
+    - name: Upload to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.get_release.outputs.upload_url }} 
+        asset_path: ./airdao-nop-rs-ubuntu.zip
+        asset_name: airdao-nop-release-${{ env.RELEASE_VERSION }}.zip
+        asset_content_type: application/zip
