@@ -15,6 +15,10 @@ if [ -f /etc/debian_version ]; then
     DISTRO=$(lsb_release -is)
     if [[ "$DISTRO" == "Debian" ]]; then
 
+        if [ ! -d "/etc/apt/keyrings" ]; then
+            sudo mkdir -p /etc/apt/keyrings
+        fi
+
         curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
         echo \
           "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
@@ -30,6 +34,10 @@ if [ -f /etc/debian_version ]; then
         sudo chmod +x /usr/local/bin/docker-compose
 
     elif [[ "$DISTRO" == "Ubuntu" ]]; then
+
+        if [ ! -d "/etc/apt/keyrings" ]; then
+            sudo mkdir -p /etc/apt/keyrings
+        fi
 
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
         echo \
@@ -59,8 +67,17 @@ chmod +x update.sh
 ./update.sh
 
 LATEST_TAG=$(curl -s https://api.github.com/repos/ambrosus/airdao-nop-rs/releases/latest | jq -r .tag_name)
+DEBIAN_VERSION=$(lsb_release -sr)
+UBUNTU_VERSION=$(lsb_release -sr)
 
-curl -L -o airdao-nop-release.zip https://github.com/ambrosus/airdao-nop-rs/releases/download/$LATEST_TAG/airdao-nop-rs-ubuntu.zip
+if (( $(echo "$DEBIAN_VERSION > 11" | bc -l) )) || (( $(echo "$UBUNTU_VERSION >= 22" | bc -l) )); then
+    FILE_URL="https://github.com/ambrosus/airdao-nop-rs/releases/download/$LATEST_TAG/airdao-nop-rs-x86-64.zip"
+else
+    FILE_URL="https://github.com/ambrosus/airdao-nop-rs/releases/download/$LATEST_TAG/airdao-nop-rs-x86-64-old.zip"
+fi
+
+curl -L -o airdao-nop-release.zip "$FILE_URL"
+
 unzip airdao-nop-release.zip
 rm airdao-nop-release.zip
 chmod +x ./airdao-nop-rs
