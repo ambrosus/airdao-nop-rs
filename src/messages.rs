@@ -1,5 +1,5 @@
+use alloy::primitives::Address;
 use chrono::{DateTime, Utc};
-use ethereum_types::Address;
 use std::{net::IpAddr, time::Duration};
 use strum_macros::Display;
 

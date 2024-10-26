@@ -7,6 +7,7 @@ pub mod setup;
 pub mod state;
 pub mod utils;
 
+use alloy::{network::AnyNetwork, providers::ProviderBuilder};
 use anyhow::anyhow;
 use clap::{Parser, Subcommand};
 use console::style;
@@ -82,21 +83,28 @@ async fn run(config: &Config) -> Result<(), AppError> {
 
     cliclack::log::step(MessageType::DockerStarted)?;
 
-    let web3_client_remote = web3::Web3::new(web3::transports::Http::new(&setup.network.rpc)?);
-    let web3_client_local = web3::Web3::new(web3::transports::Http::new(
-        std::env::var("PARITY_URL")
-            .as_deref()
-            .unwrap_or("http://127.0.0.1:8545"),
-    )?);
+    let provider_remote = ProviderBuilder::new()
+        .with_recommended_fillers()
+        .network::<AnyNetwork>()
+        .on_http(setup.network.rpc.clone());
+    let provider_local = ProviderBuilder::new()
+        .with_recommended_fillers()
+        .network::<AnyNetwork>()
+        .on_http(
+            std::env::var("PARITY_URL")
+                .as_deref()
+                .unwrap_or("http://127.0.0.1:8545")
+                .parse()?,
+        );
 
     let mut check_status =
-        CheckStatusPhase::new(web3_client_remote.clone(), &setup.network, setup.address).await?;
+        CheckStatusPhase::new(provider_remote.clone(), &setup.network, setup.address).await?;
     check_status.run().await?;
 
     let mut actions_menu = ActionsMenuPhase::new(
         config.discord_webhook_url.clone(),
-        web3_client_remote,
-        web3_client_local,
+        provider_remote,
+        provider_local,
     );
     loop {
         if actions_menu.quit {

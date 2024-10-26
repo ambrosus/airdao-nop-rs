@@ -1,15 +1,22 @@
+use alloy::{
+    contract::CallBuilder,
+    dyn_abi::{DynSolValue, JsonAbiExt},
+    json_abi::Function,
+    primitives::{Address, U256},
+    providers::{
+        fillers::{FillProvider, TxFiller},
+        Network, Provider,
+    },
+    sol_types::{sol, SolType, SolValue},
+    transports::Transport,
+};
 use anyhow::anyhow;
 use chrono::Utc;
-use ethabi::Function;
-use ethereum_types::{Address, U256};
-use ethers::abi::{Detokenize, Tokenize};
-use ethers_contract_derive::EthAbiType;
 use futures_util::{future::BoxFuture, FutureExt};
 use std::{collections::HashMap, time::Duration};
-use web3::{types::CallRequest, Transport, Web3};
 
 use super::Phase;
-use crate::{config::Network, contract::EthContract, error::AppError, messages};
+use crate::{config, contract::EthContract, error::AppError, messages};
 use messages::MessageType;
 
 const DEPLOYMENTS_JSON: [(u64, &str); 3] = [
@@ -27,26 +34,31 @@ const DEPLOYMENTS_JSON: [(u64, &str); 3] = [
     ),
 ];
 
-pub struct CheckStatusPhase<T: Transport + Send + Sync>
-where
-    <T as web3::Transport>::Out: Send,
+pub struct CheckStatusPhase<
+    F,
+    P: Provider<T, N> + Send + Sync + Clone,
+    T: Transport + Clone,
+    N: Network + Clone,
+> where
+    F: TxFiller<N>,
 {
-    web3_client: Web3<T>,
+    provider: FillProvider<F, P, T, N>,
     contracts: HashMap<String, EthContract>,
     node_addr: Address,
     explorer_url: String,
 }
 
-impl<T: Transport + Send + Sync> CheckStatusPhase<T>
+impl<F, P: Provider<T, N> + Send + Sync + Clone, T: Transport + Clone, N: Network + Clone>
+    CheckStatusPhase<F, P, T, N>
 where
-    <T as web3::Transport>::Out: Send,
+    F: TxFiller<N>,
 {
     pub async fn new(
-        web3_client: Web3<T>,
-        network: &Network,
+        provider: FillProvider<F, P, T, N>,
+        network: &config::Network,
         node_addr: Address,
     ) -> Result<Self, AppError> {
-        let chain_id = web3_client.eth().chain_id().await?.as_u64();
+        let chain_id = provider.get_chain_id().await?;
         let mut deployments = DEPLOYMENTS_JSON
             .iter()
             .filter_map(|(chain_id, json_text)| {
@@ -58,7 +70,7 @@ where
             })
             .collect::<HashMap<_, _>>();
         Ok(Self {
-            web3_client,
+            provider,
             contracts: deployments.remove(&chain_id).ok_or_else(|| {
                 anyhow!(
                     "Unable to find deployment information for chain id `{}`",
@@ -70,46 +82,35 @@ where
         })
     }
 
-    async fn query<R: Detokenize, P: Tokenize>(
+    async fn query<R: SolValue>(
         &self,
         contract: Address,
         function: &Function,
-        params: P,
-    ) -> Result<R, AppError> {
-        let input = function.encode_input(&params.into_tokens())?;
+        params: &[DynSolValue],
+    ) -> Result<R, AppError>
+    where
+        R: From<<<R as SolValue>::SolType as SolType>::RustType>,
+    {
+        let input = function.abi_encode_input(params)?;
 
-        let output = self
-            .web3_client
-            .eth()
-            .call(
-                CallRequest {
-                    from: None,
-                    to: Some(contract),
-                    gas: None,
-                    gas_price: None,
-                    value: None,
-                    data: Some(input.into()),
-                    ..Default::default()
-                },
-                None,
-            )
+        let output = CallBuilder::new_raw(&self.provider, input.into())
+            .to(contract)
+            .call()
             .await?;
 
-        let decoded = function.decode_output(&output.0)?;
-
-        <R>::from_tokens(decoded).map_err(AppError::from)
+        <R>::abi_decode(&output.0, true).map_err(AppError::from)
     }
 
-    #[allow(unused)]
-    async fn query_by_fn_signature<R: Detokenize, P: Tokenize>(
-        &self,
-        contract: Address,
-        signature: &str,
-        params: P,
-    ) -> Result<R, AppError> {
-        let eth_fn = ethers::abi::AbiParser::default().parse_function(signature)?;
-        self.query(contract, &eth_fn, params).await
-    }
+    // #[allow(unused)]
+    // async fn query_by_fn_signature<R: Detokenize, P: Tokenize>(
+    //     &self,
+    //     contract: Address,
+    //     signature: &str,
+    //     params: P,
+    // ) -> Result<R, AppError> {
+    //     let eth_fn = ethers::abi::AbiParser::default().parse_function(signature)?;
+    //     self.query(contract, &eth_fn, params).await
+    // }
 
     async fn get_stake(&self, node_addr: Address) -> Result<Stake, AppError> {
         let contract = self
@@ -117,8 +118,12 @@ where
             .get("ServerNodesManager")
             .ok_or_else(|| anyhow!("Unable to find contract `ServerNodesManager` abi"))?;
 
-        self.query(contract.address, contract.function("stakes")?, node_addr)
-            .await
+        self.query(
+            contract.address,
+            contract.function("stakes")?,
+            &[node_addr.into()],
+        )
+        .await
     }
 
     async fn get_withdraw_lock_id(&self, node_addr: Address) -> Result<U256, AppError> {
@@ -130,7 +135,7 @@ where
         self.query(
             contract.address,
             contract.function("lockedWithdraws")?,
-            node_addr,
+            &[node_addr.into()],
         )
         .await
     }
@@ -141,8 +146,12 @@ where
             .get("LockKeeper")
             .ok_or_else(|| anyhow!("Unable to find contract `LockKeeper` abi"))?;
 
-        self.query(contract.address, contract.function("getLock")?, lock_id)
-            .await
+        self.query(
+            contract.address,
+            contract.function("getLock")?,
+            &[lock_id.into()],
+        )
+        .await
     }
 
     async fn is_onboarded(&self, node_addr: Address) -> Result<bool, AppError> {
@@ -151,10 +160,10 @@ where
             .get("ValidatorSet")
             .ok_or_else(|| anyhow!("Unable to find contract `ValidatorSet` abi"))?;
 
-        self.query::<U256, _>(
+        self.query::<U256>(
             contract.address,
             contract.function("getNodeStake")?,
-            node_addr,
+            &[node_addr.into()],
         )
         .await
         .map(|stake_val| !stake_val.is_zero())
@@ -169,7 +178,7 @@ where
         self.query(
             contract.address,
             contract.function("onboardingDelay")?,
-            node_addr,
+            &[node_addr.into()],
         )
         .await
     }
@@ -191,20 +200,23 @@ where
         node_addr: Address,
         stake: &Stake,
     ) -> Result<Duration, AppError> {
-        let onboarding_delay = self.get_onboarding_delay(node_addr).await?;
         let now = Utc::now();
-        let seconds_to_wait = onboarding_delay
-            .as_u64()
-            .saturating_sub(now.timestamp() as u64)
-            .saturating_sub(stake.timestamp_stake.as_u64());
+        let seconds_to_wait = u64::try_from(
+            self.get_onboarding_delay(node_addr)
+                .await?
+                .saturating_sub(stake.timestamp_stake),
+        )
+        .map_err(anyhow::Error::from)?
+        .saturating_sub(now.timestamp() as u64);
 
         Ok(Duration::from_secs(seconds_to_wait))
     }
 }
 
-impl<T: Transport + Send + Sync> Phase for CheckStatusPhase<T>
+impl<F, P: Provider<T, N> + Send + Sync + Clone, T: Transport + Clone, N: Network + Clone> Phase
+    for CheckStatusPhase<F, P, T, N>
 where
-    <T as web3::Transport>::Out: Send,
+    F: TxFiller<N>,
 {
     fn run(&mut self) -> BoxFuture<'_, Result<(), AppError>> {
         async {
@@ -246,32 +258,32 @@ where
     }
 }
 
-#[derive(Debug, EthAbiType)]
-pub struct StakeInfo {
-    pub amount: U256,
-    pub staking_contract: Address,
-    pub is_always_top: bool,
-}
+sol! {
+    struct StakeInfo {
+        uint256 amount;
+        address staking_contract;
+        bool is_always_top;
+    }
 
-#[derive(Debug, EthAbiType)]
-pub struct Stake {
-    stake: U256,
-    timestamp_stake: U256,
-    owner_address: Address,
-    rewards_address: Address,
-}
+    #[derive(Debug)]
+    struct Stake {
+        uint256 stake;
+        uint256 timestamp_stake;
+        address owner_address;
+        address rewards_address;
+    }
 
-#[derive(Debug, EthAbiType)]
-pub struct Lock {
-    locker: Address,
-    receiver: Address,
-    token: Address,
-    first_unlock_time: u64,
-    unlock_period: u64,
-    total_claims: u64,
-    times_claimed: u64,
-    interval_amount: U256,
-    description: String,
+    struct Lock {
+        address locker;
+        address receiver;
+        address token;
+        uint64 first_unlock_time;
+        uint64 unlock_period;
+        uint64 total_claims;
+        uint64 times_claimed;
+        uint256 interval_amount;
+        string description;
+    }
 }
 
 #[derive(Debug)]

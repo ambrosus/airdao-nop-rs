@@ -1,5 +1,5 @@
+use alloy::primitives::Address;
 use anyhow::anyhow;
-use ethereum_types::Address;
 use std::path::PathBuf;
 use yaml_rust2::{Yaml, YamlLoader};
 

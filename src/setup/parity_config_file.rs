@@ -1,4 +1,4 @@
-use ethereum_types::Address;
+use alloy::primitives::Address;
 use std::{net::IpAddr, path::PathBuf};
 
 use crate::error::AppError;

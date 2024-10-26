@@ -11,14 +11,11 @@ futures-util = "0.3"
 async-trait = "0.1"
 
 # Ethereum
-ethers = "2.0.14"
-ethers-contract-derive = "2.0"
-ethabi = "18.0.0"
-ethabi-derive = "16.0.0"
-ethereum-types = "0.14"
 jsonrpc-core = "18.0.0"
 web3 = { version = "0.19" }
 ethers-providers = "2"
+alloy = { version = "0.5.4", features = ["full", "json-rpc", "sol-types"] }
+alloy-sol-types = "0.8.9"
 
 # Crypto
 k256 = { version = "0.13" }
@@ -32,6 +29,7 @@ cipher = "0.4"
 
 # Web
 reqwest = { version = "0.12", features = ["rustls-tls", "json", "deflate", "stream", "multipart"] }
+url = { version = "2.5.2", features = ["serde"] }
 
 # SerDe
 serde = { version = "1.0", features = ["derive"] }
@@ -66,6 +64,6 @@ clap = { version = "4.5", features = ["derive"] }
 [dev-dependencies]
 assert_matches = "1.5"
 
-[patch.crates-io.ethers]
-git = "https://github.com/ZelionD/ethers-rs.git"
-branch = "feature/parse-tuple-keyword-in-func-params"
+[patch.crates-io.alloy-sol-type-parser]
+git = "https://github.com/ZelionD/core.git"
+branch = "feature/parse-full-signature-tuples"

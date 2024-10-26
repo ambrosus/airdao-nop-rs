@@ -3,8 +3,8 @@ pub mod debug_info;
 pub mod exec;
 pub mod logger;
 
+use alloy::primitives::Address;
 use backtrace::Backtrace;
-use ethereum_types::{Address, H160};
 use log::error;
 use serde::{de, Deserialize};
 use sha3::{Digest, Keccak256};
@@ -102,8 +102,8 @@ pub mod secp256k1_signing_key_opt_str {
     }
 }
 
-pub fn get_eth_address(uncompressed_public_key: &[u8]) -> H160 {
-    H160::from_slice(
+pub fn get_eth_address(uncompressed_public_key: &[u8]) -> Address {
+    Address::from_slice(
         &Keccak256::new_with_prefix(&uncompressed_public_key[1..])
             .finalize()
             .as_slice()[12..],

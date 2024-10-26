@@ -29,21 +29,24 @@ pub enum AppError {
     /// Config error
     #[error("Config error: {0}")]
     Config(#[from] config::ConfigError),
-    /// Web3 error
-    #[error("Web3 error: {0}")]
-    Web3(#[from] web3::Error),
     /// Regex error
     #[error("RegExp error: {0}")]
     Regexp(#[from] regex::Error),
-    /// Ethers crate parse error
-    #[error("Ethers abi parse error: {0}")]
-    EthersParse(#[from] ethers::abi::ParseError),
-    /// Ethers crate abi error
-    #[error("Ethers abi error: {0}")]
-    EthersAbi(#[from] ethers::abi::Error),
-    /// Ethers crate invalid output type error
-    #[error("Ethers invalid output type error: {0}")]
-    EthersOutputType(#[from] ethers::abi::InvalidOutputType),
+    /// Alloy abi error
+    #[error("Alloy abi error: {0}")]
+    AlloyAbi(#[from] alloy::dyn_abi::Error),
+    /// Alloy types error
+    #[error("Alloy types error: {0}")]
+    AlloyTypes(#[from] alloy::sol_types::Error),
+    /// Alloy rpc transport error
+    #[error("Alloy rpc transport error: {0}")]
+    AlloyRpcTransport(#[from] alloy::transports::TransportError),
+    /// Alloy contract error
+    #[error("Alloy contract error: {0}")]
+    AlloyContract(#[from] alloy::contract::Error),
+    /// Url parse error
+    #[error("Url parse error: {0}")]
+    UrlParse(#[from] url::ParseError),
     /// Generic
     #[error("{0:#}")]
     Anyhow(#[from] anyhow::Error),

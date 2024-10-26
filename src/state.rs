@@ -1,6 +1,6 @@
+use alloy::primitives::Address;
 use config::ConfigError;
-use ethereum_types::Address;
-use ethers::core::k256::ecdsa::SigningKey;
+use k256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,

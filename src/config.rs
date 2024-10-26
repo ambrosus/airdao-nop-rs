@@ -14,7 +14,7 @@ pub struct Config {
 #[serde(rename_all = "camelCase")]
 pub struct Network {
     pub domain: String,
-    pub rpc: String,
+    pub rpc: reqwest::Url,
     pub chainspec: String,
     pub explorer_url: String,
     pub name: String,

@@ -1,13 +1,19 @@
+use alloy::{
+    eips::{BlockId, BlockNumberOrTag},
+    network::{BlockResponse, HeaderResponse, Network},
+    primitives::U256,
+    providers::{
+        fillers::{FillProvider, TxFiller},
+        Provider,
+    },
+    rpc::types::{BlockTransactionsKind, SyncStatus},
+    transports::Transport,
+};
 use anyhow::anyhow;
 use chrono::{DateTime, Utc};
-use ethereum_types::U256;
 use futures_util::{future::BoxFuture, FutureExt};
 use serde::Deserialize;
 use std::path::PathBuf;
-use web3::{
-    types::{Block, BlockId, BlockNumber, SyncState},
-    Transport, Web3,
-};
 
 use super::Phase;
 use crate::{
@@ -18,12 +24,16 @@ use crate::{
 };
 use messages::MessageType;
 
-pub struct ActionsMenuPhase<T: Transport + Send + Sync>
-where
-    <T as web3::Transport>::Out: Send,
+pub struct ActionsMenuPhase<
+    F,
+    P: Provider<T, N> + Send + Sync + Clone,
+    T: Transport + Clone,
+    N: Network + Clone,
+> where
+    F: TxFiller<N>,
 {
-    web3_client_remote: Web3<T>,
-    web3_client_local: Web3<T>,
+    provider_remote: FillProvider<F, P, T, N>,
+    provider_local: FillProvider<F, P, T, N>,
     client: reqwest::Client,
     discord_webhook_url: String,
     pub quit: bool,
@@ -47,41 +57,43 @@ struct DiscordError {
     message: String,
 }
 
-impl<T: Transport + Send + Sync> ActionsMenuPhase<T>
+impl<F, P: Provider<T, N> + Send + Sync + Clone, T: Transport + Clone, N: Network + Clone>
+    ActionsMenuPhase<F, P, T, N>
 where
-    <T as web3::Transport>::Out: Send,
+    F: TxFiller<N>,
 {
     pub fn new(
         discord_webhook_url: String,
-        web3_client_remote: Web3<T>,
-        web3_client_local: Web3<T>,
+        provider_remote: FillProvider<F, P, T, N>,
+        provider_local: FillProvider<F, P, T, N>,
     ) -> Self {
         Self {
             quit: false,
             discord_webhook_url,
             client: reqwest::Client::new(),
-            web3_client_remote,
-            web3_client_local,
+            provider_remote,
+            provider_local,
         }
     }
 
     async fn check_sync(&self) -> Result<(), AppError> {
-        match self.web3_client_local.eth().syncing().await? {
-            SyncState::Syncing(state) => {
+        match self.provider_local.syncing().await? {
+            SyncStatus::Info(info) => {
                 cliclack::note(
                     "Sync check",
                     MessageType::Syncing {
-                        progress: state
+                        progress: info
                             .current_block
-                            .saturating_sub(state.starting_block)
+                            .saturating_sub(info.starting_block)
                             .saturating_mul(U256::from(100))
-                            .checked_div(state.highest_block.saturating_sub(state.starting_block))
+                            .checked_div(info.highest_block.saturating_sub(info.starting_block))
                             .unwrap_or(U256::from(100))
-                            .as_u64(),
+                            .try_into()
+                            .map_err(anyhow::Error::from)?,
                     },
                 )?;
             }
-            SyncState::NotSyncing => {
+            SyncStatus::None => {
                 cliclack::note("Sync check", MessageType::NotSyncing)?;
             }
         }
@@ -91,18 +103,17 @@ where
 
     async fn check_fork(&self) -> Result<MessageType, AppError> {
         match self
-            .web3_client_local
-            .eth()
-            .block(BlockId::Number(BlockNumber::Latest))
+            .provider_local
+            .get_block(
+                BlockId::Number(BlockNumberOrTag::Latest),
+                BlockTransactionsKind::Hashes,
+            )
             .await?
         {
-            Some(Block {
-                number: Some(block_number),
-                hash,
-                ..
-            }) if matches!(
-                self.web3_client_remote.eth().block(BlockId::Number(BlockNumber::Number(block_number))).await?,
-                Some(remote_block) if remote_block.hash == hash) =>
+            Some(block)
+                if matches!(
+                self.provider_remote.get_block(BlockId::Number(BlockNumberOrTag::Number(block.header().number())), BlockTransactionsKind::Hashes).await?,
+                Some(remote_block) if remote_block.header().hash() == block.header().hash()) =>
             {
                 Ok(MessageType::NotForked)
             }
@@ -246,9 +257,10 @@ where
     }
 }
 
-impl<T: Transport + Send + Sync> Phase for ActionsMenuPhase<T>
+impl<F, P: Provider<T, N> + Send + Sync + Clone, T: Transport + Clone, N: Network + Clone> Phase
+    for ActionsMenuPhase<F, P, T, N>
 where
-    <T as web3::Transport>::Out: Send,
+    F: TxFiller<N>,
 {
     fn run(&mut self) -> BoxFuture<'_, Result<(), error::AppError>> {
         async {

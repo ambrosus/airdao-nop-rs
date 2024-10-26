@@ -3,8 +3,8 @@ pub mod keystore;
 mod parity_config_file;
 pub mod utils;
 
+use alloy::primitives::Address;
 use anyhow::anyhow;
-use ethereum_types::Address;
 use futures::StreamExt;
 use k256::ecdsa::SigningKey;
 use rand::rngs::OsRng;

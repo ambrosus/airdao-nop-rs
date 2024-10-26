@@ -1,5 +1,5 @@
+use alloy::primitives::Address;
 use chrono::Utc;
-use ethereum_types::Address;
 use std::{fmt::write, path::PathBuf};
 
 use super::exec;
