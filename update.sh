@@ -11,7 +11,10 @@ net.ipv6.conf.all.disable_ipv6=1
 END
 sysctl -p /etc/sysctl.d/10-airdao.conf
 
-cd ~/airdao-nop-rs
+cd ~/airdao-nop-rs || return
+rm airdao-nop-rs
+
+git pull origin main
 
 CURRENT_VERSION=$(./airdao-nop-rs --version | cut -d ' ' -f2)
 LATEST_VERSION=$(curl -s https://raw.githubusercontent.com/ambrosus/airdao-nop-rs/main/Cargo.toml | grep '^version' | sed -E 's/version = "(.*)"/\1/')
