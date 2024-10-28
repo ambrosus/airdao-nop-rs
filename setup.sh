@@ -4,9 +4,6 @@
 sed -i 's/^#\$nrconf{restart} = '\''i'\'';/$nrconf{restart} = '\''a'\'';/' /etc/needrestart/needrestart.conf
 
 apt-get install -y \
-    libssl-dev \
-    pkg-config \
-    ca-certificates \
     git \
     jq \
     unzip
@@ -69,14 +66,14 @@ cd airdao-nop-rs || return
 chmod +x update.sh
 ./update.sh
 
-LATEST_TAG=$(curl -s https://api.github.com/repos/ambrosus/airdao-nop-rs/releases/latest | jq -r .tag_name)
-DEBIAN_VERSION=$(lsb_release -sr)
-UBUNTU_VERSION=$(lsb_release -sr)
+LATEST_TAG=$(curl -s https://raw.githubusercontent.com/ambrosus/airdao-nop-rs/main/Cargo.toml | grep '^version' | sed -E 's/version = "(.*)"/\1/')
+UBUNTU_MAJOR_VERSION=$(echo "$UBUNTU_VERSION" | cut -d '.' -f 1)
+DEBIAN_MAJOR_VERSION=$(echo "$DEBIAN_VERSION" | cut -d '.' -f 1)
 
-if (( $(echo "$DEBIAN_VERSION > 11" | bc -l) )) || (( $(echo "$UBUNTU_VERSION >= 22" | bc -l) )); then
-    FILE_URL="https://github.com/ambrosus/airdao-nop-rs/releases/download/$LATEST_TAG/airdao-nop-rs-x86-64.zip"
+if (( DEBIAN_MAJOR_VERSION > 11 )) || (( UBUNTU_MAJOR_VERSION >= 22 )); then
+    FILE_URL="https://github.com/ambrosus/airdao-nop-rs/releases/download/v$LATEST_TAG/airdao-nop-rs-x86-64.zip"
 else
-    FILE_URL="https://github.com/ambrosus/airdao-nop-rs/releases/download/$LATEST_TAG/airdao-nop-rs-x86-64-old.zip"
+    FILE_URL="https://github.com/ambrosus/airdao-nop-rs/releases/download/v$LATEST_TAG/airdao-nop-rs-x86-64-old.zip"
 fi
 
 curl -L -o airdao-nop-release.zip "$FILE_URL"
