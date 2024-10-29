@@ -66,7 +66,13 @@ jobs:
         RUSTFLAGS='-C link-arg=-s' cargo build --release --target x86_64-unknown-linux-gnu
 
     - name: Archive 
-      run: zip -j airdao-nop-rs-x86-64.zip target/x86_64-unknown-linux-gnu/release/airdao-nop-rs
+      run: |
+        mkdir airdao-nop-rs
+        cp target/x86_64-unknown-linux-gnu/release/airdao-nop-rs airdao-nop-rs/
+        cp -r setup_templates/ config/ airdao-nop-rs/
+        cp -r config/ airdao-nop-rs/
+        cp update.sh airdao-nop-rs/
+        zip -r airdao-nop-rs-x86-64.zip airdao-nop-rs/
 
     - name: Upload to Release
       uses: actions/upload-release-asset@v1
@@ -109,7 +115,13 @@ jobs:
         RUSTFLAGS='-C link-arg=-s' cargo build --release --target x86_64-unknown-linux-gnu
 
     - name: Archive 
-      run: zip -j airdao-nop-rs-x86-64-old.zip target/x86_64-unknown-linux-gnu/release/airdao-nop-rs
+      run: |
+        mkdir airdao-nop-rs
+        cp target/x86_64-unknown-linux-gnu/release/airdao-nop-rs airdao-nop-rs/
+        cp -r setup_templates/ config/ airdao-nop-rs/
+        cp -r config/ airdao-nop-rs/
+        cp update.sh airdao-nop-rs/
+        zip -r airdao-nop-rs-x86-64-old.zip airdao-nop-rs/
 
     - name: Upload to Release
       uses: actions/upload-release-asset@v1
