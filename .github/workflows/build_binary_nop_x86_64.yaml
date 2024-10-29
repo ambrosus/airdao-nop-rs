@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'Cargo.toml'
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -30,8 +31,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ env.version }}
-        release_name: Release ${{ env.version }}
+        tag_name: v${{ env.version }}
+        release_name: Release v${{ env.version }}
         draft: false
         prerelease: false
 
