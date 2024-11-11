@@ -1,6 +1,7 @@
 use alloy::{
+    consensus::BlockHeader,
     eips::{BlockId, BlockNumberOrTag},
-    network::{BlockResponse, HeaderResponse, Network},
+    network::{primitives::HeaderResponse, BlockResponse, Network},
     primitives::U256,
     providers::{
         fillers::{FillProvider, TxFiller},
