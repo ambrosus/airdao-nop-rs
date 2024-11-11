@@ -1,6 +1,6 @@
 [package]
 name = "airdao-nop-rs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 [dependencies]
@@ -14,8 +14,8 @@ async-trait = "0.1"
 jsonrpc-core = "18.0.0"
 web3 = { version = "0.19" }
 ethers-providers = "2"
-alloy = { version = "0.5.4", features = ["full", "json-rpc", "sol-types"] }
-alloy-sol-types = "0.8.9"
+alloy = { version = "0.6.2", features = ["full", "json-rpc", "sol-types"] }
+alloy-sol-types = "0.8.11"
 
 # Crypto
 k256 = { version = "0.13" }
