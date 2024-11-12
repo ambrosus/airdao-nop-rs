@@ -75,6 +75,12 @@ jobs:
         cp update.sh airdao-nop-rs/
         zip -r airdao-nop-rs-x86-64.zip airdao-nop-rs/
 
+    - name: Sign binary with Cosign
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+      run: |
+        cosign sign --keyless ./airdao-nop-rs-x86-64.zip
+
     - name: Upload to Release
       uses: actions/upload-release-asset@v1
       env:
@@ -123,6 +129,12 @@ jobs:
         cp -r config/ airdao-nop-rs/
         cp update.sh airdao-nop-rs/
         zip -r airdao-nop-rs-x86-64-old.zip airdao-nop-rs/
+
+    - name: Sign binary with Cosign
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+      run: |
+        cosign sign --keyless ./airdao-nop-rs-x86-64-old.zip
 
     - name: Upload to Release
       uses: actions/upload-release-asset@v1

@@ -60,6 +60,12 @@ fi
 # Revert /etc/needrestart/needrestart.conf to original state after installing required packages
 sed -i 's/^\$nrconf{restart} = '\''a'\'';/$nrconf{restart} = '\''i'\'';/' /etc/needrestart/needrestart.conf
 
+if ! command -v cosign &> /dev/null; then
+  echo "Installing cosign..."
+  curl -L https://github.com/sigstore/cosign/releases/download/v2.0.0/cosign-linux-amd64 -o /usr/local/bin/cosign
+  chmod +x /usr/local/bin/cosign
+fi
+
 LATEST_TAG=$(curl -s https://raw.githubusercontent.com/ambrosus/airdao-nop-rs/main/Cargo.toml | grep '^version' | sed -E 's/version = "(.*)"/\1/')
 UBUNTU_MAJOR_VERSION=$(lsb_release -sr | cut -d '.' -f 1)
 DEBIAN_MAJOR_VERSION=$(lsb_release -sr | cut -d '.' -f 1)
@@ -71,6 +77,15 @@ else
 fi
 
 curl -L -o airdao-nop-release.zip "$FILE_URL"
+
+echo "Verifying binary signature..."
+if ! cosign verify --keyless airdao-nop-release.zip; then
+  echo "ALERT: The binary file did not pass verification. It might not be safe to execute."
+  exit 1
+fi
+
+echo "Signature verified successfully."
+
 unzip airdao-nop-release.zip
 rm airdao-nop-release.zip
 
