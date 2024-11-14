@@ -51,6 +51,12 @@ jobs:
         components: rustfmt, clippy
         target: x86_64-unknown-linux-gnu
 
+    - name: Update discordWebhookUrl in config/default.json
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        jq '.discordWebhookUrl = env.DISCORD_WEBHOOK' config/default.json > tmp.json && mv tmp.json config/default.json
+
     - name: Cache cargo registry and git dependencies
       uses: actions/cache@v3
       with:
@@ -61,16 +67,34 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-
 
+    - name: Install Cosign
+      run: |
+        curl -sSL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 -o /usr/local/bin/cosign
+        chmod +x /usr/local/bin/cosign
+
     - name: Build binary
       run: |
         git submodule update --init --recursive
         RUSTFLAGS='-C link-arg=-s' cargo build --release --target x86_64-unknown-linux-gnu
+
+    - name: Sign the binary with Cosign
+      env:
+        COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+        COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
+        COSIGN_EXPERIMENTAL: "true"
+      run: |
+        echo "${{ secrets.COSIGN_PRIVATE_KEY }}" > cosign.key
+        echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > airdao-nop-rs.pub
+
+        cosign sign-blob --key cosign.key --output-signature airdao-nop-rs.sig --yes target/x86_64-unknown-linux-gnu/release/airdao-nop-rs
 
     - name: Archive 
       run: |
         mkdir airdao-nop-rs
         cp target/x86_64-unknown-linux-gnu/release/airdao-nop-rs airdao-nop-rs/
         cp -r setup_templates/ config/ airdao-nop-rs/
+        cp airdao-nop-rs.sig  airdao-nop-rs.pub airdao-nop-rs/
         cp -r config/ airdao-nop-rs/
         cp update.sh airdao-nop-rs/
         zip -r airdao-nop-rs-x86-64.zip airdao-nop-rs/
@@ -100,26 +124,40 @@ jobs:
         components: rustfmt, clippy
         target: x86_64-unknown-linux-gnu
 
-    - name: Cache cargo registry and git dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
+    - name: Update discordWebhookUrl in config/default.json
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        jq '.discordWebhookUrl = env.DISCORD_WEBHOOK' config/default.json > tmp.json && mv tmp.json config/default.json
+
+    - name: Install Cosign
+      run: |
+        curl -sSL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 -o /usr/local/bin/cosign
+        chmod +x /usr/local/bin/cosign
 
     - name: Build binary
       run: |
         git submodule update --init --recursive
         RUSTFLAGS='-C link-arg=-s' cargo build --release --target x86_64-unknown-linux-gnu
 
+    - name: Sign the binary with Cosign
+      env:
+        COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+        COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
+        COSIGN_EXPERIMENTAL: "true"
+      run: |
+        echo "${{ secrets.COSIGN_PRIVATE_KEY }}" > cosign.key
+        echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > airdao-nop-rs.pub
+
+        cosign sign-blob --key cosign.key --output-signature airdao-nop-rs.sig --yes target/x86_64-unknown-linux-gnu/release/airdao-nop-rs
+
     - name: Archive 
       run: |
         mkdir airdao-nop-rs
         cp target/x86_64-unknown-linux-gnu/release/airdao-nop-rs airdao-nop-rs/
         cp -r setup_templates/ config/ airdao-nop-rs/
+        cp airdao-nop-rs.sig  airdao-nop-rs.pub airdao-nop-rs/
         cp -r config/ airdao-nop-rs/
         cp update.sh airdao-nop-rs/
         zip -r airdao-nop-rs-x86-64-old.zip airdao-nop-rs/
