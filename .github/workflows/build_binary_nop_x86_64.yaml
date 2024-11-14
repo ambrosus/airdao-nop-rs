@@ -51,6 +51,12 @@ jobs:
         components: rustfmt, clippy
         target: x86_64-unknown-linux-gnu
 
+    - name: Update discordWebhookUrl in config/default.json
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        jq '.discordWebhookUrl = env.DISCORD_WEBHOOK' config/default.json > tmp.json && mv tmp.json config/default.json
+
     - name: Cache cargo registry and git dependencies
       uses: actions/cache@v3
       with:
@@ -117,6 +123,12 @@ jobs:
         override: true
         components: rustfmt, clippy
         target: x86_64-unknown-linux-gnu
+
+    - name: Update discordWebhookUrl in config/default.json
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        jq '.discordWebhookUrl = env.DISCORD_WEBHOOK' config/default.json > tmp.json && mv tmp.json config/default.json
 
     - name: Install Cosign
       run: |
