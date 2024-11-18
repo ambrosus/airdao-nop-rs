@@ -140,8 +140,7 @@ async fn run_update() -> Result<(), AppError> {
 
 fn print_intro() -> Result<(), AppError> {
     cliclack::intro(
-        style(
-            r#"
+        style("
                    ,lc,..                                                      
                     'cx0K0xoc,..                                                
                        .;o0WMWX0xoc,..                                          
@@ -162,8 +161,7 @@ fn print_intro() -> Result<(), AppError> {
     10001      1x1   1000000001    1x000000001.      10001       .100000001.
    00  x00     1x1   10       001  1x1        1x1   00  x00     10        101 
   000xxxx000   1x1   1O0xxxx001    1x1        1x1  000xxxx000   101        01
- 000      000  1x1   10     1111   1x100000001x   000      000   '100000001'
-    "#,
+ 000      000  1x1   10     1111   1x100000001x   000      000   '100000001'",
         )
         .on_black()
         .blue(),
