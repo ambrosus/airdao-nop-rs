@@ -140,7 +140,8 @@ async fn run_update() -> Result<(), AppError> {
 
 fn print_intro() -> Result<(), AppError> {
     cliclack::intro(
-        style("
+        style(
+            "
                    ,lc,..                                                      
                     'cx0K0xoc,..                                                
                        .;o0WMWX0xoc,..                                          

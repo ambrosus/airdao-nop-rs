@@ -25,6 +25,8 @@ use crate::{
 };
 use messages::MessageType;
 
+const MAX_REMOTE_BLOCK_TIMESTAMP_AHEAD: u64 = 60;
+
 pub struct ActionsMenuPhase<
     F,
     P: Provider<T, N> + Send + Sync + Clone,
@@ -103,23 +105,48 @@ where
     }
 
     async fn check_fork(&self) -> Result<MessageType, AppError> {
-        match self
+        let Some(block) = self
             .provider_local
             .get_block(
                 BlockId::Number(BlockNumberOrTag::Latest),
                 BlockTransactionsKind::Hashes,
             )
             .await?
+        else {
+            return Ok(MessageType::Forked);
+        };
+
+        let header = block.header();
+
+        let Some(remote_block) = self
+            .provider_remote
+            .get_block(
+                BlockId::Number(BlockNumberOrTag::Number(header.number())),
+                BlockTransactionsKind::Hashes,
+            )
+            .await?
+        else {
+            return Ok(MessageType::Forked);
+        };
+
+        let Some(remote_latest_block) = self
+            .provider_remote
+            .get_block(
+                BlockId::Number(BlockNumberOrTag::Latest),
+                BlockTransactionsKind::Hashes,
+            )
+            .await?
+        else {
+            return Ok(MessageType::Forked);
+        };
+
+        if remote_block.header().hash() != header.hash()
+            || !matches!(remote_latest_block.header().timestamp().checked_sub(header.timestamp()), Some(diff) if diff < MAX_REMOTE_BLOCK_TIMESTAMP_AHEAD)
         {
-            Some(block)
-                if matches!(
-                self.provider_remote.get_block(BlockId::Number(BlockNumberOrTag::Number(block.header().number())), BlockTransactionsKind::Hashes).await?,
-                Some(remote_block) if remote_block.header().hash() == block.header().hash()) =>
-            {
-                Ok(MessageType::NotForked)
-            }
-            _ => Ok(MessageType::Forked),
+            return Ok(MessageType::Forked);
         }
+
+        Ok(MessageType::NotForked)
     }
 
     async fn fix_fork(&self) -> Result<(), AppError> {
